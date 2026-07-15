@@ -69,7 +69,7 @@ function GaugeView() {
   };
 
   return (
-    <main className="w-full h-full px-6 pb-6 pt-10 flex justify-around flex-col gap-4">
+    <main className="w-full h-full px-6 pb-6 pt-10 flex flex-col gap-4">
       <div
         data-tauri-drag-region
         className="fixed inset-x-0 cursor-grab top-0 z-50 h-4"
