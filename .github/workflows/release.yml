@@ -72,14 +72,10 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          # Signature + notarisation — actives seulement si les secrets existent.
-          # Sans eux, le build reste non signé (Gatekeeper affichera un avertissement).
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Build non signé. Pour signer + notariser, ajoute les 6 secrets Apple
+          # (APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY,
+          # APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID) puis remets-les ici en env.
+          # Ne PAS les laisser vides : un APPLE_CERTIFICATE vide fait échouer le codesign.
         with:
           projectPath: app
           tagName: v${{ env.VERSION }}
