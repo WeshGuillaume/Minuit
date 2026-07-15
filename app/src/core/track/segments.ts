@@ -26,7 +26,7 @@ export const SEGMENTS: readonly Segment[] = [
     width: 13,
     color: '#64748b',
     label: 'underfarming',
-    description: "API value is under half the window's cost. You're leaving gains on the table — the sub is farming you.",
+    description: "API value is under half the window's cost. You're leaving gains on the table. The sub is farming you.",
   },
   {
     id: 'profitable',
@@ -47,7 +47,7 @@ export const SEGMENTS: readonly Segment[] = [
     width: 10,
     color: '#f59e0b',
     label: 'redlining',
-    description: "You're closing in on the cap. Still salvageable if you ease off — but it's decided right here.",
+    description: "You're closing in on the cap. Still salvageable if you ease off, but it's decided right here.",
   },
   {
     id: 'noreturn',
@@ -62,7 +62,7 @@ export const SEGMENTS: readonly Segment[] = [
     width: 12,
     color: '#ef4444',
     label: 'capped',
-    description: 'Cap hit — nothing gets through until reset.',
+    description: 'Cap hit. Nothing gets through until reset.',
   },
 ] as const;
 
