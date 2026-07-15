@@ -67,7 +67,7 @@ export function ExplainerPanel({ fallback }: { fallback: ExplainerContent }) {
   const { title, description } = override ?? fallback;
   return (
     <LazyMotion features={domAnimation}>
-      <div className="mx-auto text-balance text-center font-[Helvetica,Arial,sans-serif]">
+      <div className="mx-auto text-balance px-4 text-center font-[Helvetica,Arial,sans-serif]">
         <AnimatePresence mode="wait" initial={false}>
           <m.div
             key={title + description}
@@ -84,7 +84,7 @@ export function ExplainerPanel({ fallback }: { fallback: ExplainerContent }) {
             </m.p>
             <m.p
               variants={line}
-              className="text-xs leading-normal text-[#aaaaaa] line-clamp-2 h-[2lh]"
+              className="text-xs leading-normal text-[#aaaaaa] line-clamp-3 h-[3lh]"
             >
               {description}
             </m.p>

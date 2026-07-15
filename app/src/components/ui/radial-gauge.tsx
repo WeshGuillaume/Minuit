@@ -39,6 +39,8 @@ interface RadialGaugeProps extends React.ComponentProps<"div"> {
   fillDelay?: (tick: Tick) => number;
   /** Fired with the tick under the cursor, or null once the cursor leaves. */
   onTickHover?: (tick: Tick | null) => void;
+  /** A hollow "ghost" marker on the arc (0..1 of the sweep) — e.g. your habitual pace. */
+  ghostFraction?: number;
   tickWidth?: number;
   tickInsetShadow?: boolean;
   glow?: number;
@@ -75,6 +77,7 @@ function RadialGauge({
   resolveActive,
   fillDelay,
   onTickHover,
+  ghostFraction,
   tickWidth = 4,
   tickInsetShadow = true,
   glow = 0.5,
@@ -119,7 +122,7 @@ function RadialGauge({
     <div
       data-slot="radial-gauge"
       className={cn(
-        "relative aspect-square w-full max-w-60 translate-y-6 flex items-center justify-center",
+        "relative aspect-square w-full max-w-60 -mb-6 flex items-center justify-center",
         className,
       )}
       {...props}
@@ -160,6 +163,22 @@ function RadialGauge({
             );
           })}
         </g>
+        {ghostFraction != null &&
+          (() => {
+            const angle =
+              startAngle + Math.min(1, Math.max(0, ghostFraction)) * sweepAngle;
+            const { x, y } = polarToCartesian(tickRadius + 5, angle);
+            return (
+              <circle
+                cx={x}
+                cy={y}
+                r={2.6}
+                className="fill-none stroke-muted-foreground"
+                strokeWidth={1.4}
+                opacity={0.75}
+              />
+            );
+          })()}
         {labels.map((label) => (
           <text
             key={label.value}
@@ -167,15 +186,15 @@ function RadialGauge({
             y={label.y}
             textAnchor="middle"
             dominantBaseline="middle"
-            className="fill-muted-foreground font-semibold"
-            style={{ fontSize: 7 }}
+            className="fill-muted-foreground font-medium"
+            style={{ fontSize: 9 }}
           >
             {formatLabel(label.value)}
           </text>
         ))}
       </svg>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-normal text-foreground">
+        <span className="text-lg font-normal text-foreground">
           {centerLabel ?? (
             <NumberFlow value={Math.round(clamped)} suffix={centerSuffix} />
           )}

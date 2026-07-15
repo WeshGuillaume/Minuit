@@ -68,6 +68,19 @@ export interface ModelPrice {
   cacheWrite1h: number;
 }
 
+/**
+ * The pace-axis cut points, in units of `pace` (rate ÷ sustainable rate). The
+ * clear/maxxing zone straddles pace 1; everything else is graded off it. Fixed
+ * (not per-user) so the sweet spot is a stable target; see paceBounds.
+ */
+export interface PaceThresholds {
+  underfarm: number; // below → "beaucoup trop lent"
+  slow: number; // below → "trop lent"
+  fast: number; // above → "trop vite"
+  redline: number; // above → "beaucoup trop vite"
+  blown: number; // above → past the cap trajectory ("over")
+}
+
 /** Everything editable when Anthropic changes plans/prices — see pricing.json. */
 export interface Pricing {
   updated: string;
@@ -78,7 +91,9 @@ export interface Pricing {
   /** Average month length in days used to prorate the subscription (30.44). */
   subscriptionPeriodDays: number;
   ratioThresholds: { underuse: number; breakEven: number };
-  projection: { lookbackWeeks: number; profilePercentile: number };
+  projection: { lookbackWeeks: number };
+  /** Axis-2 pace speedometer: how far back the live burn looks, and the zone cut points. */
+  pace: { recentWindowHours: number; thresholds: PaceThresholds };
 }
 
 /**
@@ -118,17 +133,7 @@ export interface HourObservation {
   ratePctPerHour: number;
 }
 
-/** One future hour between now and the reset, weighted (1 = full, <1 = partial). */
-export interface HourSlot {
-  weekday: number; // 0..6
-  hour: number; // 0..23
-  weight: number; // 0..1
-}
-
-/** Expected %/hour indexed [weekday 0..6][hour 0..23]; empty cells are 0. */
-export type RateProfile = number[][];
-
-/** A zone's real interval on the percent axis (may be empty when low === high). */
+/** A zone's interval on the driving axis (pace, or percent); may be empty when low === high. */
 export interface SegmentBound {
   id: ZoneId;
   low: number;
@@ -153,9 +158,7 @@ export interface GaugeInput {
   calibration: {
     samples: WindowSample[]; // completed windows → dollarsPerPct
     instant: WindowSample; // fallback when samples is empty
-    activeHourRates: number[]; // active-hour %/h → calmRate & habitualRate
-    profile: RateProfile; // weekday×hour P75 → projectedPct
-    remainingHours: HourSlot[]; // now → reset, per hour → projectedPct
+    activeHourRates: number[]; // active-hour %/h → habitualRate (the ghost pace)
   };
 }
 
@@ -166,30 +169,30 @@ export interface GaugeInput {
 export interface GaugeReport {
   tool: ToolId;
   window: WindowKey;
-  // Axis-2 positions, expressed as percent of the window's real cap.
-  currentPct: number;
-  projectedPct: number;
-  noReturnPct: number;
-  // Axis-1 thresholds, projected onto the same percent axis.
-  breakEvenAt: number;
-  underuseEndsAt: number;
-  // Axis-1 raw figures.
-  ratio: number;
-  breakEvenRatio: number; // ratio at/above which Anthropic is "at a loss"
-  apiValue: number;
-  windowSubCost: number;
-  elapsedSubShare: number;
-  // Projections.
-  hoursLeft: number; // working hours to the cap at habitual pace; Infinity when rate is 0
+  // ── The speedometer (Axis 2, reframed as a pace) ──────────────────────────
+  // pace = your rate ÷ the rate that lands you exactly at the cap at reset.
+  // 1 = maxxing. The needle reads recent burn; the ghost reads your habit.
+  pace: number; // needle: live/recent speed
+  habitualPace: number; // ghost: your typical speed
+  paceThresholds: PaceThresholds; // the zone cut points, so the UI can draw the bands
+  zone: ZoneId; // which named band the needle sits in (pace-driven; `over` when capped)
+  // The three rates behind the pace, in percent-of-cap per hour (for the hover).
+  recentRatePct: number; // live burn
+  habitualRatePct: number; // typical burn
+  sustainableRatePct: number; // the maxxing rate (headroom ÷ time left)
+  // Where the needle's speed lands you, and when it would hit the cap.
+  currentPct: number; // raw usage: the reality bar under the speedometer
+  landingPct: number; // currentPct + recentRate × hoursUntilReset
+  hoursToCap: number; // hours to the cap at the recent rate; Infinity when idle
   hoursUntilReset: number; // wall-clock hours until this window resets
   resetsAt: number; // ms epoch
-  // Presentation-ready derived state.
-  zone: ZoneId;
+  // ── The profitability flex (Axis 1, demoted to a badge) ───────────────────
+  ratio: number; // API value ÷ this window's subscription cost (e.g. 58×)
+  breakEvenRatio: number; // ratio at/above which Anthropic is "at a loss"
+  apiValue: number; // USD of API value farmed this window
+  // ── Descriptive & signal quality ──────────────────────────────────────────
   planLabel: string;
-  // Token throughput & mix — feeds the hover rate, the I/O/cache footer, and
-  // the cache coach. Independent of the two axes; purely descriptive.
-  tokens: TokenBreakdown;
-  // Signal quality.
+  tokens: TokenBreakdown; // I/O + cache mix; independent of the axes
   calibrated: boolean; // dollarsPerPct came from history, not the instant
   signalAvailable: boolean; // the OAuth usage signal was reachable
 }

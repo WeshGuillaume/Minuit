@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { zoneOf } from './zone-of';
-import { realBounds } from './real-bounds';
+import { SEGMENTS } from './segments';
+import type { SegmentBound } from '../types';
 
-const bounds = realBounds({ underuseEndsAt: 0.33, breakEvenAt: 0.73 });
+// zoneOf is axis-agnostic; synthetic monotonic cut points exercise the walk.
+const boundsFrom = (cuts: number[]): SegmentBound[] =>
+  SEGMENTS.map((s, i) => ({ id: s.id, low: cuts[i], high: cuts[i + 1] }));
+const bounds = boundsFrom([0, 0.33, 0.73, 85, 100, 115, 130]);
 
 describe('zoneOf', () => {
   it('classifies values within each zone', () => {
@@ -21,12 +25,12 @@ describe('zoneOf', () => {
     expect(zoneOf(115, bounds)).toBe('over');
   });
 
-  it('treats anything past the cap as over', () => {
+  it('treats anything past the far bound as over', () => {
     expect(zoneOf(130, bounds)).toBe('over');
   });
 
   it('skips an empty zone', () => {
-    const light = realBounds({ underuseEndsAt: 40, breakEvenAt: 92 }); // clear empty at 92
+    const light = boundsFrom([0, 40, 92, 92, 100, 115, 130]); // clear empty at 92
     expect(zoneOf(92, light)).toBe('warn');
   });
 });

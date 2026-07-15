@@ -1,14 +1,13 @@
-// The gauge page: the window select, the radial gauge coloured by the
-// calculated zones, and a hover-driven explainer. Every number and zone comes
-// from the pure core (via loadReport, which now reads the real machine) — this
-// file just places elements and maps a hovered tick back to its zone.
+// The gauge page: the window select and the SPEEDOMETER, a radial dial whose
+// needle reads your live pace (rate ÷ the rate that kisses the cap at reset),
+// with a ghost marker for your habitual pace and a raw-usage bar underneath as
+// the reality anchor. Every number and zone comes from the pure core (via
+// useReport); this file only places elements and maps a hovered tick to its zone.
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { GaugeReport, ToolId, WindowKey, ZoneId } from "@core/types";
-import { realBounds } from "@core/track/real-bounds";
-import { zoneOf } from "@core/track/zone-of";
-import { visibleBounds } from "../gauge/visible-bounds";
+import { paceBounds } from "@core/pace/pace-bounds";
 import { SEGMENTS, type Segment } from "@core/track/segments";
 import { RadialGauge } from "@/components/ui/radial-gauge";
 import { ProfitabilityLight } from "./profitability-light";
@@ -17,19 +16,17 @@ import {
   ExplainerPanel,
   useExplainer,
 } from "../gauge/explainer";
-import { zoneColorForPct } from "../gauge/zone-color";
+import { paceToDisplay, displayBandAt } from "../gauge/pace-track";
 import { useReport } from "../gauge/use-report";
 import { SignalRefresh } from "../gauge/signal-refresh";
-import { AdBanner } from "../components/ad-banner";
 import { WindowSize } from "../gauge/window-size";
 import { WindowTabs, WINDOWS } from "../gauge/window-tabs";
-import { EtaCenter, RegionRange } from "../gauge/eta-center";
+import { GaugeCenter, RegionRange } from "../gauge/gauge-center";
 import { TokenFooter } from "../gauge/token-footer";
+import { RawUsageBar } from "../gauge/raw-usage-bar";
 
-const GAUGE_MIN = 0;
-const GAUGE_MAX = 130;
-const SCALE_LABELS = [0, 30, 65, 100, 130];
 const ZONE_SWEEP_MS = 260; // total stagger across a hovered zone's ticks
+const SPEED_MARKS = [0.5, 1, 1.5]; // pace multiples labelled on the dial
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
@@ -60,7 +57,7 @@ function GaugeView() {
   const { report, refreshing, reload } = useReport(tool, window);
 
   return (
-    <main className="w-full h-full px-4 pb-4 pt-8.5 flex flex-col gap-2">
+    <main className="w-full h-full flex flex-col gap-2">
       <div
         data-tauri-drag-region
         className="fixed inset-x-0 cursor-grab top-0 z-50 h-4"
@@ -81,7 +78,7 @@ function GaugeView() {
         <GaugeLoading />
       )}
 
-      <AdBanner />
+      {/*<AdBanner />*/}
     </main>
   );
 }
@@ -95,8 +92,6 @@ function GaugeLoading() {
 }
 
 function RefreshDot({ show }: { show: boolean }) {
-  // Sits over the (possibly stale) gauge while a fresh scan resolves; fades out
-  // rather than popping so a fast refresh doesn't flicker.
   return (
     <div
       className={`absolute right-3 top-3 z-10 transition-opacity duration-300 ${
@@ -108,7 +103,7 @@ function RefreshDot({ show }: { show: boolean }) {
   );
 }
 
-function GaugeContent({
+export function GaugeContent({
   report,
   refreshing,
   onRefreshed,
@@ -123,11 +118,14 @@ function GaugeContent({
 }) {
   const [hovered, setHovered] = useState<ZoneId | null>(null);
   const { setOverride } = useExplainer();
-  const bounds = visibleBounds(realBounds(report));
+  const bounds = paceBounds(report.paceThresholds);
 
-  const zoneAt = (fraction: number) => zoneOf(fraction * GAUGE_MAX, bounds);
-  const colorAt = (fraction: number) =>
-    zoneColorForPct(fraction * GAUGE_MAX, report);
+  // Broken-axis position [0..100] of a pace value; capped pins to the far edge.
+  const needle =
+    report.zone === "over" ? 100 : paceToDisplay(report.pace, bounds);
+  const ghost = clamp01(paceToDisplay(report.habitualPace, bounds) / 100);
+
+  const bandAt = (fraction: number) => displayBandAt(fraction * 100);
   const hoveredBound = hovered
     ? (bounds.find((b) => b.id === hovered) ?? null)
     : null;
@@ -135,16 +133,20 @@ function GaugeContent({
   // Position of a tick within the hovered zone (0 at its low, 1 at its high),
   // used both to isolate the zone and to stagger its ticks into a sweep.
   const zoneProgress = (fraction: number) => {
-    if (!hoveredBound) return null;
-    const pct = fraction * GAUGE_MAX;
-    if (zoneAt(fraction) !== hovered) return null;
-    const span = hoveredBound.high - hoveredBound.low;
-    return span > 0 ? clamp01((pct - hoveredBound.low) / span) : 0;
+    const band = bandAt(fraction);
+    if (band.seg.id !== hovered) return null;
+    const span = band.end - band.start;
+    return span > 0 ? clamp01((fraction * 100 - band.start) / span) : 0;
   };
+
+  const marks = SPEED_MARKS.map((p) => ({
+    pos: paceToDisplay(p, bounds),
+    text: `${p}×`,
+  }));
 
   return (
     <div className="flex h-full">
-      <div className="relative flex-1 flex justify-between items-center flex-col bg-[#252525] p-2 pb-6 gap-4 rounded-2xl drop-shadow-xl border">
+      <div className="relative flex-1 flex justify-between items-center flex-col bg-[#252525] p-2 pb-6 pt-6 gap-4 drop-shadow-xl border-b">
         <RefreshDot show={refreshing} />
         <div className="flex justify-center">
           <WindowTabs
@@ -156,22 +158,25 @@ function GaugeContent({
           />
         </div>
         <RadialGauge
-          value={report.currentPct}
-          min={GAUGE_MIN}
-          max={GAUGE_MAX}
-          scaleLabels={SCALE_LABELS}
-          formatLabel={(v) => `${Math.round(v)}%`}
+          value={needle}
+          min={0}
+          max={100}
+          ghostFraction={ghost}
+          scaleLabels={hovered ? undefined : marks.map((m) => m.pos)}
+          formatLabel={(v) =>
+            marks.find((m) => Math.abs(m.pos - v) < 0.6)?.text ?? ""
+          }
           centerLabel={
             hoveredBound ? (
               <RegionRange low={hoveredBound.low} high={hoveredBound.high} />
             ) : (
-              <EtaCenter report={report} />
+              <GaugeCenter report={report} />
             )
           }
           bottomSlot={<ProfitabilityLight report={report} />}
-          activeColor={(tick) => colorAt(tick.fraction)}
+          activeColor={(tick) => bandAt(tick.fraction).seg.color}
           inactiveColor={(tick) =>
-            `color-mix(in oklch, ${colorAt(tick.fraction)} 4%, var(--deep))`
+            `color-mix(in oklch, ${bandAt(tick.fraction).seg.color} 4%, var(--deep))`
           }
           resolveActive={(tick, isActive) =>
             hovered !== null ? zoneProgress(tick.fraction) !== null : isActive
@@ -180,18 +185,19 @@ function GaugeContent({
             (zoneProgress(tick.fraction) ?? 0) * ZONE_SWEEP_MS
           }
           onTickHover={(tick) => {
-            const zone = tick ? zoneAt(tick.fraction) : null;
+            const zone = tick ? bandAt(tick.fraction).seg.id : null;
             setHovered(zone);
             const seg = zone ? SEGMENT_BY_ID[zone] : null;
             setOverride(
               seg ? { title: seg.label, description: seg.description } : null,
             );
           }}
-          tickWidth={1}
+          tickWidth={2}
           tickLength={12}
-          glow={0.1}
-          // className="flex-1"
+          glow={0.6}
+          className="w-54"
         />
+        <RawUsageBar report={report} />
         <TokenFooter report={report} />
         <ExplainerPanel
           fallback={{

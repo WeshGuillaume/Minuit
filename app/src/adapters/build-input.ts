@@ -73,6 +73,6 @@ export const buildRealInput = async (tool: ToolId, window: WindowKey): Promise<G
     events: windowEvents,
     constraints,
     windowSeconds,
-    calibration: buildCalibration(windowEvents, lookbackEvents, pricing, binding, now),
+    calibration: buildCalibration(windowEvents, lookbackEvents, pricing, binding),
   };
 };

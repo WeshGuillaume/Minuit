@@ -1,11 +1,11 @@
-// segments — the static definition of the six zones as they are DRAWN.
+// segments: the static definition of the six zones as they are DRAWN.
 //
-// Each zone gets a FIXED display width (they sum to 100). The real percent
-// intervals behind them are wildly unequal — with breakEvenAt ≈ 0.73% the first
-// two zones would be 3 px and "maxxing" would eat 95% of the bar — so the
-// track uses a broken axis: fixed display widths here, piecewise-linear mapping
-// in toTrack. This file holds only presentation data (width, colour, label,
-// description); the real bounds are derived separately in realBounds.
+// Each zone gets a FIXED display width (they sum to 100). The pace intervals
+// behind them are unequal. Maxxing spans a narrow ≈0.85–1.15× but must LOOK
+// like a big central target, so the track uses a broken axis: fixed display
+// widths here, piecewise-linear mapping in toTrack. This file holds only
+// presentation data (width, colour, label, description); the pace bounds are
+// derived separately in paceBounds.
 //
 // Colours are plain hex so both the CLI and the web UI can consume them; the
 // front-end may re-map them onto its own theme tokens.
@@ -20,6 +20,10 @@ export interface Segment {
   description: string;
 }
 
+// Widths are DISPLAY widths on the broken pace track (they sum to 100): maxxing
+// is drawn wide so the sweet spot is a big central target you can steer into,
+// even though its real pace range (≈0.85–1.15×) is narrow. Labels/descriptions
+// speak SPEED: pace = your rate ÷ the rate that kisses the cap exactly at reset.
 export const SEGMENTS: readonly Segment[] = [
   {
     id: "underuse",
@@ -27,15 +31,15 @@ export const SEGMENTS: readonly Segment[] = [
     color: "#64748b",
     label: "Underfarming",
     description:
-      "API value is under half the window's cost. You're leaving gains on the table. The sub is farming you.",
+      "Way too slow. At this speed you'll leave a big chunk of capacity (and value) unused when the window resets.",
   },
   {
     id: "profitable",
     width: 13,
     color: "#14b8a6",
-    label: "Break-even",
+    label: "Coasting",
     description:
-      "Value ≈ cost. The sub has paid for itself, but you're not cooking yet.",
+      "A little slow. You're rentable, but you'll finish the window under the cap with headroom to spare.",
   },
   {
     id: "clear",
@@ -43,7 +47,7 @@ export const SEGMENTS: readonly Segment[] = [
     color: "#22c55e",
     label: "Maxxing",
     description:
-      "You're farming way more value than the sub costs, and the cap is still miles away.",
+      "Sweet spot. Hold this pace and you kiss the cap right as the window resets: maximum value, no wall.",
   },
   {
     id: "warn",
@@ -51,22 +55,23 @@ export const SEGMENTS: readonly Segment[] = [
     color: "#f59e0b",
     label: "Redlining",
     description:
-      "You're closing in on the cap. Still salvageable if you ease off, but it's decided right here.",
+      "Too fast. Keep this up and you'll hit the cap before the reset. Ease off now and you glide back into the green.",
   },
   {
     id: "noreturn",
     width: 8,
     color: "#f97316",
-    label: "No Return",
+    label: "Way Too Fast",
     description:
-      "Even at your calmest rate, you'll hit the cap before reset. Easing off no longer saves you.",
+      "Well over the sustainable rate. You'll slam the cap with hours still on the clock. Slow down hard.",
   },
   {
     id: "over",
     width: 12,
     color: "#ef4444",
     label: "Capped",
-    description: "Cap hit. Nothing gets through until reset.",
+    description:
+      "Cap hit (or blowing straight past its trajectory). Nothing more gets through until the window resets.",
   },
 ] as const;
 

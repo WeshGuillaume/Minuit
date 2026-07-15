@@ -23,5 +23,9 @@ export const DEFAULT_PRICING: Pricing = {
   activePlan: 'max20x',
   subscriptionPeriodDays: 30.44,
   ratioThresholds: { underuse: 0.5, breakEven: 1.1 },
-  projection: { lookbackWeeks: 4, profilePercentile: 75 },
+  projection: { lookbackWeeks: 4 },
+  pace: {
+    recentWindowHours: 1,
+    thresholds: { underfarm: 0.5, slow: 0.85, fast: 1.15, redline: 1.5, blown: 2 },
+  },
 };

@@ -12,7 +12,11 @@ const pricing: Pricing = {
   activePlan: 'max20x',
   subscriptionPeriodDays: 30.44,
   ratioThresholds: { underuse: 0.5, breakEven: 1.1 },
-  projection: { lookbackWeeks: 4, profilePercentile: 75 },
+  projection: { lookbackWeeks: 4 },
+  pace: {
+    recentWindowHours: 1,
+    thresholds: { underfarm: 0.5, slow: 0.85, fast: 1.15, redline: 1.5, blown: 2 },
+  },
 };
 
 const NOW = 1_700_000_000_000;
@@ -28,8 +32,9 @@ const event = (over: Partial<UsageEvent>): UsageEvent => ({
   ...over,
 });
 
-// One opus turn worth exactly $75 of API value; a live 7-day constraint at 39%,
-// resetting in 40h; calibrated from a single real window ($2709.47 @ 39%).
+// One opus turn worth exactly $75 of API value, sent "now" (inside the 1h recent
+// window); a live 7-day constraint at 39%, resetting in 40h; calibrated from a
+// single real window ($2709.47 @ 39% → $69.47/pct).
 const input: GaugeInput = {
   tool: 'claude',
   window: 'seven_day',
@@ -44,49 +49,56 @@ const input: GaugeInput = {
   calibration: {
     samples: [{ apiValue: 2709.47, pctConsumed: 39 }],
     instant: { apiValue: 75, pctConsumed: 39 },
-    activeHourRates: [1, 2, 3],
-    profile: Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0)),
-    remainingHours: [],
+    activeHourRates: [1, 2, 3], // median → habitual 2%/h
   },
 };
 
-describe('buildGauge (end-to-end orchestration)', () => {
+describe('buildGauge (speedometer orchestration)', () => {
   const r = buildGauge(input);
 
-  it('carries the raw Axis-1 figures', () => {
+  it('carries the profitability flex figures', () => {
     expect(r.apiValue).toBeCloseTo(75, 6);
-    expect(r.windowSubCost).toBeCloseTo(45.9921, 3);
-    expect(r.ratio).toBeCloseTo(75 / 45.9921, 4);
-  });
-
-  it('projects the calibrated thresholds onto the percent axis (§5.2 control)', () => {
-    expect(r.breakEvenAt).toBeCloseTo(0.728, 2);
-    expect(r.underuseEndsAt).toBeCloseTo(0.331, 2);
+    expect(r.ratio).toBeCloseTo(75 / 45.9921, 4); // vs the whole-window sub cost
+    expect(r.breakEvenRatio).toBe(1.1);
     expect(r.calibrated).toBe(true);
   });
 
-  it('derives Axis-2 positions from the live signal', () => {
+  it('derives the three rates in percent-of-cap per hour', () => {
+    // headroom 61% over 40h left = 1.525%/h is the maxxing rate
+    expect(r.sustainableRatePct).toBeCloseTo(1.525, 6);
+    // $75 in the last hour ÷ $69.47/pct = 1.0795%/h live burn
+    expect(r.recentRatePct).toBeCloseTo(75 / (2709.47 / 39), 4);
+    expect(r.habitualRatePct).toBeCloseTo(2, 6); // p50 of [1,2,3]
+  });
+
+  it('turns those rates into a needle and a ghost pace', () => {
+    expect(r.pace).toBeCloseTo(1.07954 / 1.525, 4); // ≈ 0.708, coasting
+    expect(r.habitualPace).toBeCloseTo(2 / 1.525, 4); // ≈ 1.31, habitually redlining
+    expect(r.zone).toBe('profitable'); // needle sits in the coasting band
+  });
+
+  it('projects where the live pace lands you at reset', () => {
     expect(r.currentPct).toBe(39);
+    expect(r.landingPct).toBeCloseTo(39 + (75 / (2709.47 / 39)) * 40, 2); // ≈ 82
+    expect(r.hoursUntilReset).toBeCloseTo(40, 6);
     expect(r.signalAvailable).toBe(true);
-    expect(r.noReturnPct).toBeCloseTo(52, 6); // 100 - calm(1.2)*40h
-    expect(r.hoursLeft).toBeCloseTo(30.5, 6); // (100-39)/habitual(2)
   });
 
-  it('computes the elapsed subscription share from the reset alignment', () => {
-    // 168h window − 40h left = 128h elapsed → 200·128/730.56
-    expect(r.elapsedSubShare).toBeCloseTo(35.0416, 3);
-  });
-
-  it('resolves the current zone and the projection', () => {
-    expect(r.zone).toBe('clear');
-    expect(r.projectedPct).toBe(39); // no remaining-hour profile → stays put
+  it('forces the capped zone once usage hits 100%, whatever the pace', () => {
+    const capped = buildGauge({
+      ...input,
+      constraints: [{ ...input.constraints[0], usedPercent: 100 }],
+    });
+    expect(capped.zone).toBe('over');
+    expect(capped.sustainableRatePct).toBe(0);
   });
 
   it('degrades cleanly when the usage signal is absent', () => {
     const blind = buildGauge({ ...input, constraints: [] });
     expect(blind.signalAvailable).toBe(false);
     expect(blind.currentPct).toBe(0);
+    expect(blind.pace).toBe(0); // no time left to reset ⇒ sustainable ∞ ⇒ pace 0
     expect(blind.zone).toBe('underuse');
-    expect(Number.isNaN(blind.breakEvenAt)).toBe(false);
+    expect(Number.isNaN(blind.landingPct)).toBe(false);
   });
 });

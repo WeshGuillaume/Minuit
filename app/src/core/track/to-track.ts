@@ -1,4 +1,4 @@
-// toTrack — map a real percent-of-cap value onto the broken-axis display track
+// toTrack: map a value on the driving axis onto the broken-axis display track
 // [0..100], piecewise-linearly.
 //
 // For the segment whose real interval contains `pct`, return the segment's
@@ -8,7 +8,7 @@
 // by zero.
 //
 // THE TRADE-OFF (do not "fix" this thinking it's a bug): position inside a zone
-// is NOT proportional to reality — the axis is intentionally broken so each zone
+// is NOT proportional to reality; the axis is intentionally broken so each zone
 // is legible at a glance. Exact figures live in the stats beside the track. The
 // mapping is monotonic non-decreasing and never returns NaN.
 

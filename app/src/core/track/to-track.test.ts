@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { toTrack } from './to-track';
-import { realBounds } from './real-bounds';
+import { SEGMENTS } from './segments';
+import type { SegmentBound } from '../types';
 
-// Heavy-user bounds: underuse [0,0.33], profitable [0.33,0.73], clear [0.73,85],
-// warn [85,100], noreturn [100,115], over [115,130]. Display offsets 0,13,26,70,80,88
-// (widths 13/13/44/10/8/12).
-const bounds = realBounds({ underuseEndsAt: 0.33, breakEvenAt: 0.73 });
+// toTrack is axis-agnostic; we feed it synthetic monotonic cut points to test the
+// broken-axis mapping in isolation. These mimic the old heavy-user percent bounds:
+// underuse [0,0.33], profitable [0.33,0.73], clear [0.73,85], warn [85,100],
+// noreturn [100,115], over [115,130]. Display offsets 0,13,26,70,80,88.
+const boundsFrom = (cuts: number[]): SegmentBound[] =>
+  SEGMENTS.map((s, i) => ({ id: s.id, low: cuts[i], high: cuts[i + 1] }));
+const bounds = boundsFrom([0, 0.33, 0.73, 85, 100, 115, 130]);
 
 describe('toTrack', () => {
   it('maps segment boundaries to their exact display offsets', () => {
@@ -19,7 +23,7 @@ describe('toTrack', () => {
   });
 
   it('places a mid-zone value proportionally WITHIN its display band', () => {
-    // 92.5% is halfway through warn [85,100] -> offset 70 + 0.5*10 = 75
+    // 92.5 is halfway through warn [85,100] -> offset 70 + 0.5*10 = 75
     expect(toTrack(92.5, bounds)).toBeCloseTo(75, 6);
   });
 
@@ -39,7 +43,7 @@ describe('toTrack', () => {
   });
 
   it('steps across a collapsed (empty) zone without NaN', () => {
-    const light = realBounds({ underuseEndsAt: 40, breakEvenAt: 92 }); // clear is empty
+    const light = boundsFrom([0, 40, 92, 92, 100, 115, 130]); // clear is empty
     expect(Number.isNaN(toTrack(92, light))).toBe(false);
     expect(toTrack(91, light)).toBeLessThanOrEqual(toTrack(93, light));
   });

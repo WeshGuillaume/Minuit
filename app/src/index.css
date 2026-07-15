@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
@@ -61,7 +60,7 @@ body {
     overflow: hidden;
 }
 
-/* Base colours/typography come from shadcn tokens (@layer base + .dark). */
+/* Base colours/typography: local design tokens (@layer base + .dark below). */
 
 /* Axis-1 warning light flicker — registered as the `animate-thunder-flicker`
    utility via @theme below; the keyframes live here as plain CSS. */

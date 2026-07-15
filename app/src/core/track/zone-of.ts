@@ -1,10 +1,12 @@
-// zoneOf — which of the five zones a real percent-of-cap value falls into.
+// zoneOf: which of the six zones a value on the driving axis falls into. The
+// axis is pace today (rate ÷ sustainable rate); the function is axis-agnostic,
+// it only walks bounds.
 //
-// Walk the real bounds in order; the value belongs to the first zone whose high
-// it is strictly below. Boundary values therefore fall into the UPPER zone
-// (e.g. exactly at breakEvenAt → "clear", exactly 85 → "warn", exactly 100 →
-// "over"). Empty zones (low === high) are skipped naturally because `pct < high`
-// can never hold for them. Anything at/above the far cap is "over".
+// Walk the bounds in order; the value belongs to the first zone whose high it is
+// strictly below. Boundary values therefore fall into the UPPER zone (e.g.
+// exactly at the fast threshold → "warn"). Empty zones (low === high) are
+// skipped naturally because `value < high` can never hold for them. Anything
+// at/above the far bound is "over".
 
 import type { SegmentBound, ZoneId } from '../types';
 

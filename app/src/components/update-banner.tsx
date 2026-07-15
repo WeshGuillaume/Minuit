@@ -2,7 +2,6 @@
 // seulement quand une version est disponible ou en cours de téléchargement.
 
 import { useUpdater } from "@/lib/updater";
-import { Button } from "@/components/ui/button";
 
 export function UpdateBanner() {
   const { state, install } = useUpdater();
@@ -11,9 +10,12 @@ export function UpdateBanner() {
     return (
       <Bar>
         <span className="truncate">Version {state.update.version} disponible</span>
-        <Button size="xs" onClick={install}>
+        <button
+          onClick={install}
+          className="inline-flex h-6 shrink-0 items-center justify-center gap-1 rounded-[min(var(--radius-md),10px)] bg-primary px-2 text-xs font-medium whitespace-nowrap text-primary-foreground transition-all outline-none select-none hover:bg-primary/80 focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+        >
           Mettre à jour
-        </Button>
+        </button>
       </Bar>
     );
   }

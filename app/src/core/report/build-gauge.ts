@@ -1,42 +1,36 @@
-// buildGauge — the single pure entry point. It ORCHESTRATES the one-formula-per-
+// buildGauge: the single pure entry point. It ORCHESTRATES the one-formula-per-
 // file quantities into a serializable GaugeReport and reimplements none of them.
 // `cc-gauge status --json` prints this object verbatim; the Tauri frontend
-// consumes it. It reads no disk, clock, or network — an adapter gathers the
+// consumes it. It reads no disk, clock, or network; an adapter gathers the
 // GaugeInput (see src/adapters/**) and injects `now`.
 //
-// The only arithmetic here is time WIRING (ms → hours, window alignment), not a
-// domain formula: with a live signal we align to the real reset; without one we
-// fall back to a trailing window ending "now" so nothing crashes.
+// Axis 2 is a SPEEDOMETER: pace = your rate ÷ the rate that lands you exactly at
+// the cap at reset (1 = maxxing). The needle reads the live/recent local burn;
+// the ghost reads your habitual pace. Axis 1 (profitability) is demoted to a
+// ratio badge. The only arithmetic here is time WIRING (ms → hours), not a
+// domain formula.
 
-import type { GaugeInput, GaugeReport } from '../types';
+import type { GaugeInput, GaugeReport, UsageEvent } from '../types';
 import { windowApiValue } from '../cost/window-api-value';
 import { windowBreakdown } from '../tokens/window-breakdown';
 import { windowSubCost } from '../subscription/window-sub-cost';
-import { elapsedSubShare } from '../subscription/elapsed-sub-share';
 import { profitabilityRatio } from '../ratio/profitability-ratio';
 import { bindingWindow } from '../limits/binding-window';
 import { dollarsPerPct } from '../calibration/dollars-per-pct';
-import { calmRate } from '../calibration/calm-rate';
 import { habitualRate } from '../calibration/habitual-rate';
-import { breakEvenAt } from '../thresholds/break-even-at';
-import { underuseEndsAt } from '../thresholds/underuse-ends-at';
-import { noReturnPct } from '../thresholds/no-return-pct';
-import { projectedPct } from '../projection/projected-pct';
+import { sustainableRate } from '../pace/sustainable-rate';
+import { recentRate } from '../pace/recent-rate';
+import { paceValue } from '../pace/pace-value';
+import { paceBounds } from '../pace/pace-bounds';
 import { hoursLeft } from '../projection/hours-left';
-import { realBounds } from '../track/real-bounds';
 import { zoneOf } from '../track/zone-of';
 
 const H = 3_600_000; // ms per hour
 
-/** Time wiring: resolve the window's reset/elapsed from the binding constraint. */
-const windowClock = (
-  now: number,
-  resetsAt: number,
-  windowSeconds: number,
-): { hoursUntilReset: number; elapsedHours: number } => {
-  const hoursUntilReset = Math.max(0, (resetsAt - now) / H);
-  const elapsedHours = Math.max(0, windowSeconds / 3600 - hoursUntilReset);
-  return { hoursUntilReset, elapsedHours };
+/** Local turns priced into the last `hours` before `now`: the live-burn window. */
+const recentEvents = (events: UsageEvent[], now: number, hours: number): UsageEvent[] => {
+  const from = now - hours * H;
+  return events.filter((e) => e.timestamp >= from && e.timestamp <= now);
 };
 
 export const buildGauge = (input: GaugeInput): GaugeReport => {
@@ -46,39 +40,41 @@ export const buildGauge = (input: GaugeInput): GaugeReport => {
   const currentPct = constraint?.usedPercent ?? 0;
   const windowSeconds = constraint?.windowSeconds ?? input.windowSeconds;
   const resetsAt = constraint?.resetsAt ?? now;
-  const { hoursUntilReset, elapsedHours } = windowClock(now, resetsAt, windowSeconds);
-
-  const monthlyUsd = pricing.subscriptions[pricing.activePlan];
-  const monthDays = pricing.subscriptionPeriodDays;
+  const hoursUntilReset = Math.max(0, (resetsAt - now) / H);
 
   const apiValue = windowApiValue(input.events, pricing);
-  const subCost = windowSubCost(monthlyUsd, windowSeconds, monthDays);
-  const ratio = profitabilityRatio(apiValue, subCost);
+  const subCost = windowSubCost(
+    pricing.subscriptions[pricing.activePlan],
+    windowSeconds,
+    pricing.subscriptionPeriodDays,
+  );
 
   const dpp = dollarsPerPct(calibration.samples, calibration.instant);
-  const be = breakEvenAt(pricing.ratioThresholds.breakEven, subCost, dpp.value);
-  const ue = underuseEndsAt(pricing.ratioThresholds.underuse, subCost, dpp.value);
-  const bounds = realBounds({ underuseEndsAt: ue, breakEvenAt: be });
+  const { recentWindowHours, thresholds } = pricing.pace;
+  const recentUsd = windowApiValue(recentEvents(input.events, now, recentWindowHours), pricing);
 
-  const projected = projectedPct(currentPct, calibration.remainingHours, calibration.profile);
+  const recentPct = recentRate(recentUsd, recentWindowHours, dpp.value);
+  const habitualPct = habitualRate(calibration.activeHourRates);
+  const sustainablePct = sustainableRate(currentPct, hoursUntilReset);
 
   return {
     tool: input.tool,
     window: input.window,
+    pace: paceValue(recentPct, sustainablePct),
+    habitualPace: paceValue(habitualPct, sustainablePct),
+    paceThresholds: thresholds,
+    zone: currentPct >= 100 ? 'over' : zoneOf(paceValue(recentPct, sustainablePct), paceBounds(thresholds)),
+    recentRatePct: recentPct,
+    habitualRatePct: habitualPct,
+    sustainableRatePct: sustainablePct,
     currentPct,
-    projectedPct: projected,
-    noReturnPct: noReturnPct(calmRate(calibration.activeHourRates), hoursUntilReset),
-    breakEvenAt: be,
-    underuseEndsAt: ue,
-    ratio,
-    breakEvenRatio: pricing.ratioThresholds.breakEven,
-    apiValue,
-    windowSubCost: subCost,
-    elapsedSubShare: elapsedSubShare(monthlyUsd, elapsedHours, monthDays),
-    hoursLeft: hoursLeft(currentPct, habitualRate(calibration.activeHourRates)),
+    landingPct: currentPct + recentPct * hoursUntilReset,
+    hoursToCap: hoursLeft(currentPct, recentPct),
     hoursUntilReset,
     resetsAt,
-    zone: zoneOf(currentPct, bounds),
+    ratio: profitabilityRatio(apiValue, subCost),
+    breakEvenRatio: pricing.ratioThresholds.breakEven,
+    apiValue,
     planLabel: input.planLabel,
     tokens: windowBreakdown(input.events),
     calibrated: dpp.calibrated,

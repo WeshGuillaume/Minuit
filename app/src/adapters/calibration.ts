@@ -4,23 +4,15 @@
 // the % of cap the live signal reports, so $/% = apiValue_now / usedPercent_now
 // (Anthropic's real budget is opaque; we anchor on the observed pair). Every
 // past active hour's dollars are then converted to %/hour through that rate,
-// giving the weekday×hour profile that drives the projection.
+// giving the active-hour rates whose median is your habitual (ghost) pace.
 //
 // No historical %-of-cap is available per past window, so `samples` stays empty
 // and buildGauge falls back to this instant reading (calibrated = false). When
 // there is no live signal at all, $/% is 0 → rates 0 → the report degrades to
 // "insufficient" instead of inventing a rhythm.
 
-import type {
-  GaugeInput,
-  HourObservation,
-  HourSlot,
-  Pricing,
-  RateConstraint,
-  UsageEvent,
-} from '@core/types';
+import type { GaugeInput, HourObservation, Pricing, RateConstraint, UsageEvent } from '@core/types';
 import { windowApiValue } from '@core/cost/window-api-value';
-import { rateProfile } from '@core/calibration/rate-profile';
 
 const H = 3_600_000;
 
@@ -50,25 +42,11 @@ const observations = (buckets: HourBucket[], dollarsPerPct: number): HourObserva
     ? buckets.map((b) => ({ weekday: b.weekday, hour: b.hour, ratePctPerHour: b.usd / dollarsPerPct }))
     : [];
 
-// One weighted slot per hour from now to the reset; the last hour is partial.
-const remainingHours = (now: number, resetsAt: number): HourSlot[] => {
-  const slots: HourSlot[] = [];
-  let cursor = now;
-  while (cursor < resetsAt) {
-    const at = new Date(cursor);
-    const end = Math.min((Math.floor(cursor / H) + 1) * H, resetsAt);
-    slots.push({ weekday: at.getDay(), hour: at.getHours(), weight: (end - cursor) / H });
-    cursor = end;
-  }
-  return slots;
-};
-
 export const buildCalibration = (
   windowEvents: UsageEvent[],
   lookbackEvents: UsageEvent[],
   pricing: Pricing,
   constraint: RateConstraint | null,
-  now: number,
 ): GaugeInput['calibration'] => {
   const pctConsumed = constraint?.usedPercent ?? 0;
   const apiValue = windowApiValue(windowEvents, pricing);
@@ -78,7 +56,5 @@ export const buildCalibration = (
     samples: [],
     instant: { apiValue, pctConsumed },
     activeHourRates: obs.map((o) => o.ratePctPerHour),
-    profile: rateProfile(obs, pricing.projection.profilePercentile),
-    remainingHours: constraint ? remainingHours(now, constraint.resetsAt) : [],
   };
 };

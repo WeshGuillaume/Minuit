@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Minuit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "identifier": "com.minuit.app",
   "build": {
     "frontendDist": "../dist",
@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "Minuit",
-        "width": 400,
-        "height": 530,
+        "width": 330,
+        "height": 467,
         "resizable": false,
         "fullscreen": false,
         "titleBarStyle": "Overlay",
