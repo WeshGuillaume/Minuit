@@ -1,0 +1,33 @@
+{
+  "_comment": "EDIT THIS FILE when Anthropic changes API rates or plan prices. Rates are USD per 1,000,000 tokens. A per-user override can live at ~/.cc-gauge/pricing.json and takes precedence over this bundled copy.",
+  "updated": "2026-07-15",
+  "models": {
+    "opus": { "input": 15, "output": 75, "cacheRead": 1.5, "cacheWrite5m": 18.75, "cacheWrite1h": 30 },
+    "sonnet": { "input": 3, "output": 15, "cacheRead": 0.3, "cacheWrite5m": 3.75, "cacheWrite1h": 6 },
+    "haiku": { "input": 1, "output": 5, "cacheRead": 0.1, "cacheWrite5m": 1.25, "cacheWrite1h": 2 },
+    "fable": { "_note": "Fable 5 pricing not published at build time — placeholder, update me.", "input": 5, "output": 25, "cacheRead": 0.5, "cacheWrite5m": 6.25, "cacheWrite1h": 10 }
+  },
+  "match": [
+    { "pattern": "opus", "family": "opus" },
+    { "pattern": "sonnet", "family": "sonnet" },
+    { "pattern": "haiku", "family": "haiku" },
+    { "pattern": "fable", "family": "fable" }
+  ],
+  "subscriptions": {
+    "pro": 20,
+    "max5x": 100,
+    "max20x": 200
+  },
+  "activePlan": "max20x",
+  "subscriptionPeriodDays": 30.44,
+  "ratioThresholds": {
+    "_comment": "Axis-1 verdict boundaries. underuse: below this the API value is under half the window's sub cost. breakEven: at/above this Anthropic is at a loss (the 'à perte' toggle lights).",
+    "underuse": 0.5,
+    "breakEven": 1.1
+  },
+  "projection": {
+    "_comment": "Axis 2 calibration. lookbackWeeks: history horizon for the weekday/hour profile. profilePercentile: robustness knob (P75 default; raise toward P90 for a more pessimistic projection).",
+    "lookbackWeeks": 4,
+    "profilePercentile": 75
+  }
+}

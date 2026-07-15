@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="512" y1="0" x2="512" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2a2a2e"/>
+      <stop offset="0.5" stop-color="#161618"/>
+      <stop offset="1" stop-color="#0a0a0b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="512" cy="470" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="topEdge" x1="512" y1="0" x2="512" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="needle" x1="512" y1="540" x2="751" y2="359" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- squircle background -->
+  <rect x="64" y="64" width="896" height="896" rx="224" fill="url(#bg)"/>
+  <rect x="64" y="64" width="896" height="896" rx="224" fill="url(#glow)"/>
+  <rect x="64.5" y="64.5" width="895" height="895" rx="223.5" fill="none" stroke="url(#topEdge)" stroke-width="1.5"/>
+
+  <!-- gauge track (faint) -->
+  <path d="M 252.2 690 A 300 300 0 1 1 771.8 690"
+        fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="46" stroke-linecap="round"/>
+
+  <!-- gauge value (bright) -->
+  <path d="M 252.2 690 A 300 300 0 0 1 750.9 358.6"
+        fill="none" stroke="#ffffff" stroke-width="46" stroke-linecap="round"/>
+
+  <!-- needle -->
+  <path d="M 494 528 L 749 356 L 528 556 Z" fill="url(#needle)"/>
+
+  <!-- hub -->
+  <circle cx="512" cy="540" r="42" fill="#0a0a0b"/>
+  <circle cx="512" cy="540" r="42" fill="none" stroke="#ffffff" stroke-width="14"/>
+  <circle cx="512" cy="540" r="10" fill="#ffffff"/>
+</svg>
