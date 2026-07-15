@@ -34,6 +34,13 @@ const WINDOWS: { id: WindowKey; label: string }[] = [
   { id: "five_hour", label: "5-hour" },
 ];
 
+const WINDOW_STORAGE_KEY = "cc-gauge:window";
+
+const loadWindow = (): WindowKey => {
+  const saved = localStorage.getItem(WINDOW_STORAGE_KEY);
+  return WINDOWS.some((w) => w.id === saved) ? (saved as WindowKey) : "seven_day";
+};
+
 export default function GaugePage() {
   return (
     <ExplainerProvider>
@@ -44,7 +51,7 @@ export default function GaugePage() {
 
 function GaugeView() {
   const tool: ToolId = "claude";
-  const [window, setWindow] = useState<WindowKey>("seven_day");
+  const [window, setWindow] = useState<WindowKey>(loadWindow);
   const [hovered, setHovered] = useState<ZoneId | null>(null);
   const { setOverride } = useExplainer();
   const report = loadReport(tool, window);
@@ -79,9 +86,13 @@ function GaugeView() {
 
       <div className="gap-4 flex justify-center">
         <select
-          className="text-xs text-muted-foreground font-semibold"
+          className="text-xs text-muted-foreground font-semibold outline-none focus:outline-none focus-visible:outline-none"
           value={window}
-          onChange={(e) => setWindow(e.target.value as WindowKey)}
+          onChange={(e) => {
+            const next = e.target.value as WindowKey;
+            localStorage.setItem(WINDOW_STORAGE_KEY, next);
+            setWindow(next);
+          }}
         >
           {WINDOWS.map((w) => (
             <option key={w.id} value={w.id}>
