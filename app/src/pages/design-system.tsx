@@ -17,9 +17,8 @@ export default function DesignSystem() {
           value={120}
           min={0}
           max={120}
-          scaleLabels={[0, 30, 60, 100, 120]}
+          scaleLabels={[0, 30, 65, 100, 120]}
           formatLabel={(v) => `${v}%`}
-          centerSubLabel="maxxing"
           tickWidth={2}
           tickLength={10}
           glow={0.5}

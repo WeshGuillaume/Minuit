@@ -10,7 +10,7 @@
 // Colours are plain hex so both the CLI and the web UI can consume them; the
 // front-end may re-map them onto its own theme tokens.
 
-import type { ZoneId } from '../types';
+import type { ZoneId } from "../types";
 
 export interface Segment {
   id: ZoneId;
@@ -22,52 +22,59 @@ export interface Segment {
 
 export const SEGMENTS: readonly Segment[] = [
   {
-    id: 'underuse',
+    id: "underuse",
     width: 13,
-    color: '#64748b',
-    label: 'underfarming',
-    description: "API value is under half the window's cost. You're leaving gains on the table. The sub is farming you.",
+    color: "#64748b",
+    label: "Underfarming",
+    description:
+      "API value is under half the window's cost. You're leaving gains on the table. The sub is farming you.",
   },
   {
-    id: 'profitable',
+    id: "profitable",
     width: 13,
-    color: '#14b8a6',
-    label: 'break-even',
-    description: "Value ≈ cost. The sub has paid for itself, but you're not cooking yet.",
+    color: "#14b8a6",
+    label: "Break-even",
+    description:
+      "Value ≈ cost. The sub has paid for itself, but you're not cooking yet.",
   },
   {
-    id: 'clear',
+    id: "clear",
     width: 44,
-    color: '#22c55e',
-    label: 'maxxing',
-    description: "You're farming way more value than the sub costs, and the cap is still miles away.",
+    color: "#22c55e",
+    label: "Maxxing",
+    description:
+      "You're farming way more value than the sub costs, and the cap is still miles away.",
   },
   {
-    id: 'warn',
+    id: "warn",
     width: 10,
-    color: '#f59e0b',
-    label: 'redlining',
-    description: "You're closing in on the cap. Still salvageable if you ease off, but it's decided right here.",
+    color: "#f59e0b",
+    label: "Redlining",
+    description:
+      "You're closing in on the cap. Still salvageable if you ease off, but it's decided right here.",
   },
   {
-    id: 'noreturn',
+    id: "noreturn",
     width: 8,
-    color: '#f97316',
-    label: 'no return',
+    color: "#f97316",
+    label: "No Return",
     description:
       "Even at your calmest rate, you'll hit the cap before reset. Easing off no longer saves you.",
   },
   {
-    id: 'over',
+    id: "over",
     width: 12,
-    color: '#ef4444',
-    label: 'capped',
-    description: 'Cap hit. Nothing gets through until reset.',
+    color: "#ef4444",
+    label: "Capped",
+    description: "Cap hit. Nothing gets through until reset.",
   },
 ] as const;
 
 /** Cumulative display offset (0..100) at the START of each segment, by index. */
-export const SEGMENT_OFFSETS: readonly number[] = SEGMENTS.reduce<number[]>((acc, _seg, i) => {
-  acc.push(i === 0 ? 0 : acc[i - 1] + SEGMENTS[i - 1].width);
-  return acc;
-}, []);
+export const SEGMENT_OFFSETS: readonly number[] = SEGMENTS.reduce<number[]>(
+  (acc, _seg, i) => {
+    acc.push(i === 0 ? 0 : acc[i - 1] + SEGMENTS[i - 1].width);
+    return acc;
+  },
+  [],
+);

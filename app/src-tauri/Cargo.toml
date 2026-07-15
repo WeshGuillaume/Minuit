@@ -20,8 +20,12 @@ tauri-build = { version = "2.6.3", features = [] }
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
+reqwest = { version = "0.12", features = ["json"] }
+chrono = "0.4"    # ISO-8601 transcript timestamps -> epoch millis (scan)
+rayon = "1"       # parallel transcript parsing across cores (scan)
 log = "0.4"
-tauri = { version = "2.11.3", features = [] }
+tauri = { version = "2.11.3", features = ["macos-private-api"] }
+tauri-plugin-decorum = "1.1.1"
 tauri-plugin-log = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-http = "2"

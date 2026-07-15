@@ -8,6 +8,7 @@
 
 import { realBounds } from '@core/track/real-bounds'
 import { SEGMENTS } from '@core/track/segments'
+import { visibleBounds } from './visible-bounds'
 
 interface Anchor {
   pct: number
@@ -17,11 +18,13 @@ interface Anchor {
 type Thresholds = { underuseEndsAt: number; breakEvenAt: number; noReturnPct: number }
 
 const anchorsFor = (thresholds: Thresholds): Anchor[] => {
-  const bounds = realBounds(thresholds)
-  return SEGMENTS.map((seg, i) => ({
-    pct: (bounds[i].low + bounds[i].high) / 2,
-    color: seg.color,
-  })).sort((a, b) => a.pct - b.pct)
+  const bounds = visibleBounds(realBounds(thresholds))
+  // Empty (collapsed) zones carry no real span, so they must not pin a colour —
+  // otherwise a phantom underfarming/break-even tint bleeds into the low track.
+  return SEGMENTS.map((seg, i) => ({ seg, bound: bounds[i] }))
+    .filter(({ bound }) => bound.high > bound.low)
+    .map(({ seg, bound }) => ({ pct: (bound.low + bound.high) / 2, color: seg.color }))
+    .sort((a, b) => a.pct - b.pct)
 }
 
 const mix = (from: string, to: string, t: number) =>

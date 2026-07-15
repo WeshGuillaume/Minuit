@@ -76,12 +76,15 @@ export function ExplainerPanel({ fallback }: { fallback: ExplainerContent }) {
             animate="animate"
             exit="exit"
           >
-            <m.p variants={line} className="mb-1 text-sm font-semibold capitalize">
+            <m.p
+              variants={line}
+              className="mb-1 text-sm font-semibold capitalize"
+            >
               {title}
             </m.p>
             <m.p
               variants={line}
-              className="text-xs leading-normal text-[#aaaaaa]"
+              className="text-xs leading-normal text-[#aaaaaa] line-clamp-2 h-[2lh]"
             >
               {description}
             </m.p>

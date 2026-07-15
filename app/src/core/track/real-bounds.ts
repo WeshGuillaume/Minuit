@@ -12,6 +12,10 @@
 // That produces monotonic, contiguous bounds where a squeezed zone simply
 // becomes EMPTY (low === high) — never inverted, never NaN. toTrack/zoneOf rely
 // on exactly this shape.
+//
+// This stays the TRUE model (a heavy user really does have a 0.07%-wide
+// underfarming zone); hiding those slivers from the drawn track is a rendering
+// choice made downstream in visibleBounds, not here.
 
 import type { SegmentBound } from '../types';
 import { SEGMENTS } from './segments';

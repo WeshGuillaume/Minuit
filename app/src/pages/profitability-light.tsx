@@ -4,8 +4,9 @@
 // crosses break-even. The light carries no text of its own: hovering it takes
 // over the shared explainer panel with the state AND the real consumption value.
 
+import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import type { GaugeReport } from "@core/types";
-import { cn } from "@/lib/utils";
 import { useExplainerHover, type ExplainerContent } from "../gauge/explainer";
 
 const usd = (value: number) =>
@@ -23,35 +24,39 @@ const explain = (
   description: `Real value farmed: ${usd(report.apiValue)}`,
 });
 
-function ClaudeMark() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      fillRule="evenodd"
-      clipRule="evenodd"
-      aria-hidden="true"
-      className="size-6 mt-1"
-    >
-      <path d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z" />
-    </svg>
-  );
-}
+const spring = { type: "spring", stiffness: 550, damping: 34 } as const;
 
 export function ProfitabilityLight({ report }: { report: GaugeReport }) {
   const profitable = report.ratio < report.breakEvenRatio;
   const hover = useExplainerHover(explain(report, profitable));
+  const [over, setOver] = useState(false);
 
   return (
-    <div className="flex cursor-default justify-center" {...hover}>
-      <div
-        className={cn(
-          "grid flex-none place-items-center text-(--glow) ",
-          profitable ? "[--glow:#f97316]" : "[--glow:#ef4444]",
+    <span
+      className={`relative flex cursor-default items-center justify-center rounded-full px-2.5 py-1 text-[11px] tabular-nums transition-colors ${
+        over ? "text-foreground" : "text-muted-foreground"
+      }`}
+      onMouseEnter={() => {
+        hover.onMouseEnter();
+        setOver(true);
+      }}
+      onMouseLeave={() => {
+        hover.onMouseLeave();
+        setOver(false);
+      }}
+    >
+      <AnimatePresence>
+        {over && (
+          <motion.span
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.85 }}
+            transition={spring}
+            className="absolute inset-0 -z-10 rounded-full bg-white/10"
+          />
         )}
-      >
-        <ClaudeMark />
-      </div>
-    </div>
+      </AnimatePresence>
+      {usd(report.apiValue)}
+    </span>
   );
 }

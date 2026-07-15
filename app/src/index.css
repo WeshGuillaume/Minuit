@@ -49,6 +49,18 @@ body,
     margin: 0;
 }
 
+/* Transparent window: the OS draws nothing, so we round + clip #root ourselves
+   to give the whole window a custom corner radius (past macOS's native ~10px). */
+html,
+body {
+    background: transparent;
+}
+
+#root {
+    border-radius: 24px;
+    overflow: hidden;
+}
+
 /* Base colours/typography come from shadcn tokens (@layer base + .dark). */
 
 /* Axis-1 warning light flicker — registered as the `animate-thunder-flicker`
@@ -117,7 +129,7 @@ body,
 .dark {
     --background: #252525;
     --foreground: oklch(0.85 0 0);
-    --deep: #171717;
+    --deep: #141414;
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
@@ -155,13 +167,16 @@ body,
     }
     body {
         @apply text-foreground;
-        /* Subtle top-anchored grey→black wash for a slick, modern surface. */
+    }
+    /* Subtle top-anchored grey→black wash for a slick, modern surface — lives on
+       #root so it fills the rounded, clipped window rather than the transparent body. */
+    #root {
         background-color: var(--deep);
         background-image: radial-gradient(
             130% 100% at 50% 0%,
-            #232323 0%,
-            #1d1d1d 46%,
-            #181818 100%
+            #1f1f1e 0%,
+            #1c1c1b 46%,
+            #1a1a18 100%
         );
         background-attachment: fixed;
     }

@@ -13,17 +13,19 @@
     "windows": [
       {
         "title": "Minuit",
-        "width": 342,
-        "height": 442,
-        "resizable": true,
+        "width": 400,
+        "height": 530,
+        "resizable": false,
         "fullscreen": false,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "transparent": true
       }
     ],
     "security": {
       "csp": null
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,

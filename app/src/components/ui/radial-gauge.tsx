@@ -27,7 +27,8 @@ interface RadialGaugeProps extends React.ComponentProps<"div"> {
   labelRadius?: number;
   formatLabel?: (value: number) => string;
   centerLabel?: React.ReactNode;
-  centerSubLabel?: React.ReactNode;
+  /** Rendered inside the gauge, anchored to the bottom arc gap. */
+  bottomSlot?: React.ReactNode;
   /** Suffix for the animated center number (e.g. "%"), used when no centerLabel override. */
   centerSuffix?: string;
   activeColor?: TickColor;
@@ -67,6 +68,7 @@ function RadialGauge({
   labelRadius = 66,
   formatLabel = (v) => `${v}`,
   centerLabel,
+  bottomSlot,
   centerSuffix = "",
   activeColor = (tick) => tickActiveColor(tick.fraction),
   inactiveColor = (tick) => tickInactiveColor(tick.fraction, "var(--deep)"),
@@ -116,7 +118,10 @@ function RadialGauge({
   return (
     <div
       data-slot="radial-gauge"
-      className={cn("relative aspect-square w-full max-w-60", className)}
+      className={cn(
+        "relative aspect-square w-full max-w-60 translate-y-6 flex items-center justify-center",
+        className,
+      )}
       {...props}
     >
       <svg
@@ -179,6 +184,11 @@ function RadialGauge({
           <div className="pointer-events-auto mt-1">{children}</div>
         ) : null}
       </div>
+      {bottomSlot ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-12 flex justify-center">
+          <div className="pointer-events-auto">{bottomSlot}</div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -8,10 +8,58 @@
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
-    "fs:default",
-    "http:default",
-    "shell:default",
     "updater:default",
-    "process:default"
+    "process:default",
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [
+        { "path": "$HOME/.claude" },
+        { "path": "$HOME/.claude/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [
+        { "path": "$HOME/.claude/**" },
+        { "path": "$HOME/.cc-gauge/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        { "path": "$HOME/.cc-gauge" },
+        { "path": "$HOME/.cc-gauge/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [
+        { "path": "$HOME/.cc-gauge/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [
+        { "path": "$HOME/.cc-gauge" }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://api.anthropic.com/*" },
+        { "url": "https://platform.claude.com/*" },
+        { "url": "https://console.anthropic.com/*" }
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "security",
+          "cmd": "security",
+          "args": true
+        }
+      ]
+    }
   ]
 }

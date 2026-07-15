@@ -48,6 +48,17 @@ export interface UsageEvent extends TokenUsage {
   model: string;
 }
 
+/**
+ * The five token tiers summed over a window, plus two derived signals the UI
+ * reads directly (see tokens/windowBreakdown). `perHour` is throughput over
+ * ACTIVE hours; `cacheHitRate` (0..1) is cacheRead / (cacheRead + input).
+ */
+export interface TokenBreakdown extends TokenUsage {
+  total: number; // sum of all five tiers — cacheRead-dominated, shown apart in UI
+  perHour: number; // FRESH tokens/hour (excl. cacheRead) on active hours, 0 when none
+  cacheHitRate: number; // 0..1, share of context reads served from cache
+}
+
 /** Per-million-token USD API rates for one model family. */
 export interface ModelPrice {
   input: number;
@@ -169,11 +180,15 @@ export interface GaugeReport {
   windowSubCost: number;
   elapsedSubShare: number;
   // Projections.
-  hoursLeft: number; // Infinity when the habitual rate is 0
+  hoursLeft: number; // working hours to the cap at habitual pace; Infinity when rate is 0
+  hoursUntilReset: number; // wall-clock hours until this window resets
   resetsAt: number; // ms epoch
   // Presentation-ready derived state.
   zone: ZoneId;
   planLabel: string;
+  // Token throughput & mix — feeds the hover rate, the I/O/cache footer, and
+  // the cache coach. Independent of the two axes; purely descriptive.
+  tokens: TokenBreakdown;
   // Signal quality.
   calibrated: boolean; // dollarsPerPct came from history, not the instant
   signalAvailable: boolean; // the OAuth usage signal was reachable

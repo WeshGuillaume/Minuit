@@ -17,9 +17,11 @@ export const FIELD_LABELS: Record<keyof GaugeReport, string> = {
   windowSubCost: 'Sub cost / window',
   elapsedSubShare: 'Sub share elapsed',
   hoursLeft: 'Runway (hours)',
+  hoursUntilReset: 'Time to reset',
   resetsAt: 'Reset',
   zone: 'Zone',
   planLabel: 'Plan',
+  tokens: 'Token breakdown',
   calibrated: 'Calibrated',
   signalAvailable: 'Signal available',
 }

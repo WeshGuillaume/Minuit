@@ -1,11 +1,13 @@
 // The single seam between the page and its data: return a GaugeReport for the
-// selected tool/window. Today it runs the pure core on sample input; the real
-// backend (Tauri plugin-fs + plugin-http → buildGauge) slots in here later
-// without changing the signature.
+// selected tool/window. It now reads the real machine — local transcripts + the
+// OAuth usage signal — via the adapter layer, then runs the pure core on it. The
+// signature is async so the page can await it; buildGauge itself stays pure.
 
 import type { GaugeReport, ToolId, WindowKey } from '@core/types'
 import { buildGauge } from '@core/report/build-gauge'
-import { sampleInput } from './sample'
+import { buildRealInput } from '../adapters/build-input'
 
-export const loadReport = (tool: ToolId, window: WindowKey): GaugeReport =>
-  buildGauge(sampleInput(tool, window))
+export const loadReport = async (
+  tool: ToolId,
+  window: WindowKey,
+): Promise<GaugeReport> => buildGauge(await buildRealInput(tool, window))

@@ -10,6 +10,7 @@
 
 import type { GaugeInput, GaugeReport } from '../types';
 import { windowApiValue } from '../cost/window-api-value';
+import { windowBreakdown } from '../tokens/window-breakdown';
 import { windowSubCost } from '../subscription/window-sub-cost';
 import { elapsedSubShare } from '../subscription/elapsed-sub-share';
 import { profitabilityRatio } from '../ratio/profitability-ratio';
@@ -75,9 +76,11 @@ export const buildGauge = (input: GaugeInput): GaugeReport => {
     windowSubCost: subCost,
     elapsedSubShare: elapsedSubShare(monthlyUsd, elapsedHours, monthDays),
     hoursLeft: hoursLeft(currentPct, habitualRate(calibration.activeHourRates)),
+    hoursUntilReset,
     resetsAt,
     zone: zoneOf(currentPct, bounds),
     planLabel: input.planLabel,
+    tokens: windowBreakdown(input.events),
     calibrated: dpp.calibrated,
     signalAvailable: constraint !== null,
   };
