@@ -72,10 +72,12 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          # Build non signé. Pour signer + notariser, ajoute les 6 secrets Apple
-          # (APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_SIGNING_IDENTITY,
-          # APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID) puis remets-les ici en env.
-          # Ne PAS les laisser vides : un APPLE_CERTIFICATE vide fait échouer le codesign.
+          # Signature OTA (minisign) : génère les .sig + latest.json de l'updater.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Codesign Apple non signé pour l'instant. Pour signer + notariser, ajoute
+          # les 6 secrets Apple puis remets-les ici en env (jamais vides : un
+          # APPLE_CERTIFICATE vide fait échouer le codesign).
         with:
           projectPath: app
           tagName: v${{ env.VERSION }}

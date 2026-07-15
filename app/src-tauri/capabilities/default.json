@@ -10,6 +10,8 @@
     "core:window:allow-start-dragging",
     "fs:default",
     "http:default",
-    "shell:default"
+    "shell:default",
+    "updater:default",
+    "process:default"
   ]
 }

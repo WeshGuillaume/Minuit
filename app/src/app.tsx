@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import GaugePage from "./pages/gauge-page";
 import DesignSystem from "./pages/design-system";
+import { UpdateBanner } from "./components/update-banner";
 
 const useHashRoute = (): string => {
   const [hash, setHash] = useState(window.location.hash);
@@ -17,5 +18,10 @@ const useHashRoute = (): string => {
 
 export default function App() {
   const route = useHashRoute();
-  return route === "#/design" ? <DesignSystem /> : <GaugePage />;
+  return (
+    <>
+      {route === "#/design" ? <DesignSystem /> : <GaugePage />}
+      <UpdateBanner />
+    </>
+  );
 }
