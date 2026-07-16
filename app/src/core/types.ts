@@ -147,6 +147,9 @@ export interface GaugeInput {
   tool: ToolId;
   window: WindowKey;
   now: number; // ms epoch — injected, never read from the clock inside core
+  /** ms epoch when the live usage signal was observed; `now` when there is none.
+   *  buildGauge advances currentPct with local burn since this moment (see livePct). */
+  capturedAt: number;
   pricing: Pricing;
   planLabel: string;
   /** Windowed, deduped turns whose API value feeds Axis 1. */

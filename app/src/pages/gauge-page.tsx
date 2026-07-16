@@ -1,46 +1,59 @@
 // The gauge page: the window select and the SPEEDOMETER, a radial dial whose
 // needle reads your live pace (rate ÷ the rate that kisses the cap at reset),
 // with a ghost marker for your habitual pace and a raw-usage bar underneath as
-// the reality anchor. Every number and zone comes from the pure core (via
-// useReport); this file only places elements and maps a hovered tick to its zone.
+// the reality anchor.
+//
+// Responsiveness is pure CSS container queries against the panel's own box
+// (named "panel" below), via a CSS Grid whose template and item placement
+// both switch on the same conditions:
+//   • past a width-and-height floor (with a separate, looser floor for wide-
+//     but-short panels — see gauge-stack.tsx), the tabs and the usage/footer/
+//     explainer stack hide entirely and the bare dial fills the space;
+//   • otherwise the default is a COLUMN — tabs, then dial, then the rest —
+//     which suits the portrait and square shapes this window is normally
+//     resized to;
+//   • only once the panel is BOTH short and clearly wide (landscape) does it
+//     switch to a ROW: the dial docks left (spanning both grid rows), and
+//     tabs + the rest stack in a column beside it. A merely short-but-square
+//     panel stays a column and just sheds text, rather than forcing a row
+//     layout onto a shape that doesn't have the width for it.
+// Grid (rather than flex) is what lets the tabs visually relocate — above the
+// dial in one arrangement, beside it in the other — without duplicating
+// markup: only their grid-area assignment changes, not their DOM position.
+//
+// The "row" condition is repeated verbatim in gauge-stack.tsx, explainer.tsx
+// and token-footer.tsx (their placement/alignment must switch in lockstep
+// with this file's grid template) — keep them in sync by hand; Tailwind needs
+// the full class as a static string, so it can't be a shared constant.
+//
+// Each piece owns its own finer-grained degradation against its own box (see
+// gauge-stack.tsx, speedo-dial.tsx) — nothing here measures or branches on
+// size in JS, it only places. All numbers come from the pure core via useReport.
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import type { GaugeReport, ToolId, WindowKey, ZoneId } from "@core/types";
-import { paceBounds } from "@core/pace/pace-bounds";
-import { SEGMENTS, type Segment } from "@core/track/segments";
-import { RadialGauge } from "@/components/ui/radial-gauge";
-import { ProfitabilityLight } from "./profitability-light";
+import type { GaugeReport, ToolId, WindowKey } from "@core/types";
+import { SEGMENTS } from "@core/track/segments";
 import {
   ExplainerProvider,
   ExplainerPanel,
-  useExplainer,
+  type ExplainerContent,
 } from "../gauge/explainer";
-import { paceToDisplay, displayBandAt } from "../gauge/pace-track";
 import { useReport } from "../gauge/use-report";
 import { SignalRefresh } from "../gauge/signal-refresh";
 import { WindowSize } from "../gauge/window-size";
-import { WindowTabs, WINDOWS } from "../gauge/window-tabs";
-import { GaugeCenter, RegionRange } from "../gauge/gauge-center";
+import { WindowTabs } from "../gauge/window-tabs";
 import { TokenFooter } from "../gauge/token-footer";
 import { RawUsageBar } from "../gauge/raw-usage-bar";
+import { SpeedoDial } from "../gauge/speedo-dial";
+import { GaugeStack, GaugeTabsSlot } from "../gauge/gauge-stack";
 
-const ZONE_SWEEP_MS = 260; // total stagger across a hovered zone's ticks
-const SPEED_MARKS = [0.5, 1, 1.5]; // pace multiples labelled on the dial
-
-const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
-
-const SEGMENT_BY_ID = Object.fromEntries(
-  SEGMENTS.map((s) => [s.id, s]),
-) as Record<ZoneId, Segment>;
-
+const SEGMENT_BY_ID = Object.fromEntries(SEGMENTS.map((s) => [s.id, s]));
 const WINDOW_STORAGE_KEY = "cc-gauge:window";
 
 const loadWindow = (): WindowKey => {
   const saved = localStorage.getItem(WINDOW_STORAGE_KEY);
-  return WINDOWS.some((w) => w.id === saved)
-    ? (saved as WindowKey)
-    : "seven_day";
+  return saved === "five_hour" || saved === "seven_day" ? saved : "seven_day";
 };
 
 export default function GaugePage() {
@@ -57,12 +70,12 @@ function GaugeView() {
   const { report, refreshing, reload } = useReport(tool, window);
 
   return (
-    <main className="w-full h-full flex flex-col gap-2">
+    <main className="flex h-full w-full flex-col gap-2">
       <div
         data-tauri-drag-region
-        className="fixed inset-x-0 cursor-grab top-0 z-50 h-4"
+        className="fixed inset-x-0 top-0 z-50 h-4 cursor-grab"
       >
-        <div className="w-10 translate-y-2 pointer-events-none h-0.5 rounded-full bg-white/30 mx-auto" />
+        <div className="mx-auto h-0.5 w-10 translate-y-2 rounded-full bg-white/30" />
       </div>
       <WindowSize />
 
@@ -77,15 +90,13 @@ function GaugeView() {
       ) : (
         <GaugeLoading />
       )}
-
-      {/*<AdBanner />*/}
     </main>
   );
 }
 
 function GaugeLoading() {
   return (
-    <div className="w-full flex-1 flex items-center justify-center text-muted-foreground">
+    <div className="flex w-full flex-1 items-center justify-center text-muted-foreground">
       <Loader2 className="size-6 animate-spin" />
     </div>
   );
@@ -116,96 +127,72 @@ export function GaugeContent({
   window: WindowKey;
   setWindow: (next: WindowKey) => void;
 }) {
-  const [hovered, setHovered] = useState<ZoneId | null>(null);
-  const { setOverride } = useExplainer();
-  const bounds = paceBounds(report.paceThresholds);
-
-  // Broken-axis position [0..100] of a pace value; capped pins to the far edge.
-  const needle =
-    report.zone === "over" ? 100 : paceToDisplay(report.pace, bounds);
-  const ghost = clamp01(paceToDisplay(report.habitualPace, bounds) / 100);
-
-  const bandAt = (fraction: number) => displayBandAt(fraction * 100);
-  const hoveredBound = hovered
-    ? (bounds.find((b) => b.id === hovered) ?? null)
-    : null;
-
-  // Position of a tick within the hovered zone (0 at its low, 1 at its high),
-  // used both to isolate the zone and to stagger its ticks into a sweep.
-  const zoneProgress = (fraction: number) => {
-    const band = bandAt(fraction);
-    if (band.seg.id !== hovered) return null;
-    const span = band.end - band.start;
-    return span > 0 ? clamp01((fraction * 100 - band.start) / span) : 0;
+  const changeWindow = (next: WindowKey) => {
+    localStorage.setItem(WINDOW_STORAGE_KEY, next);
+    setWindow(next);
   };
 
-  const marks = SPEED_MARKS.map((p) => ({
-    pos: paceToDisplay(p, bounds),
-    text: `${p}×`,
-  }));
+  const fallback: ExplainerContent = {
+    title: SEGMENT_BY_ID[report.zone].label,
+    description: SEGMENT_BY_ID[report.zone].description,
+  };
 
   return (
-    <div className="flex h-full">
-      <div className="relative flex-1 flex justify-between items-center flex-col bg-[#252525] p-2 pb-6 pt-6 gap-4 drop-shadow-xl border-b">
-        <RefreshDot show={refreshing} />
-        <div className="flex justify-center">
-          <WindowTabs
-            value={window}
-            onChange={(next) => {
-              localStorage.setItem(WINDOW_STORAGE_KEY, next);
-              setWindow(next);
-            }}
-          />
-        </div>
-        <RadialGauge
-          value={needle}
-          min={0}
-          max={100}
-          ghostFraction={ghost}
-          scaleLabels={hovered ? undefined : marks.map((m) => m.pos)}
-          formatLabel={(v) =>
-            marks.find((m) => Math.abs(m.pos - v) < 0.6)?.text ?? ""
-          }
-          centerLabel={
-            hoveredBound ? (
-              <RegionRange low={hoveredBound.low} high={hoveredBound.high} />
-            ) : (
-              <GaugeCenter report={report} />
-            )
-          }
-          bottomSlot={<ProfitabilityLight report={report} />}
-          activeColor={(tick) => bandAt(tick.fraction).seg.color}
-          inactiveColor={(tick) =>
-            `color-mix(in oklch, ${bandAt(tick.fraction).seg.color} 4%, var(--deep))`
-          }
-          resolveActive={(tick, isActive) =>
-            hovered !== null ? zoneProgress(tick.fraction) !== null : isActive
-          }
-          fillDelay={(tick) =>
-            (zoneProgress(tick.fraction) ?? 0) * ZONE_SWEEP_MS
-          }
-          onTickHover={(tick) => {
-            const zone = tick ? bandAt(tick.fraction).seg.id : null;
-            setHovered(zone);
-            const seg = zone ? SEGMENT_BY_ID[zone] : null;
-            setOverride(
-              seg ? { title: seg.label, description: seg.description } : null,
-            );
-          }}
-          tickWidth={2}
-          tickLength={12}
-          glow={0.6}
-          className="w-54"
+    <div className="relative flex flex-1 @container/panel overflow-hidden border-b bg-[#252525] drop-shadow-xl [container-type:size]">
+      <RefreshDot show={refreshing} />
+      {!report.signalAvailable && <SignalRefresh onRefreshed={onRefreshed} />}
+
+      {/* CSS Grid, not flex: tabs need to visually relocate — above the dial
+          in the default column arrangement, beside it (top of the text
+          column) in the row one — which only a genuine reflow (grid area
+          reassignment) gives without duplicating markup. Column: tabs / dial
+          / rest, stacked. Row: dial spans both rows on the left; tabs and
+          rest stack in the right column. */}
+      {/* The grid's own padding/gap is minimal by default (bare: just the
+          dial — no drag-handle clearance or row spacing to worry about) and
+          only grows to pt-6/px-3/pb-3/gap-3 once the stack actually reveals
+          (the SAME two conditions as gauge-stack.tsx's REVEAL) — that's when
+          tabs are actually there to crowd the drag handle and rows to space
+          apart. Keeping it minimal in bare mode matters: the dial's own
+          bare-mode formula below has to subtract this same overhead to avoid
+          overflowing the panel, and the bigger padding meant for a full
+          tabs/dial/rest column left barely anything for the dial at the
+          smallest sizes (e.g. 150×150). */}
+      {/* The "rest" row MUST stay `1fr`, not `auto`: GaugeStack has
+          container-type:size (needed so the explainer can query its height),
+          and a size-contained box reports a zero content size to its grid
+          track — an `auto` track sizing off that content collapses to zero.
+          `1fr` sizes from leftover space instead, sidestepping the content
+          query entirely. Any slack this leaves is split evenly by
+          GaugeStack's own justify-center (see gauge-stack.tsx), not dumped
+          in one spot after the last visible child. */}
+      <div className="grid h-full w-full grid-cols-1 grid-rows-[auto_auto_1fr] gap-0 p-1 [@container_panel_(min-width:170px)_and_(min-height:170px)]:gap-3 [@container_panel_(min-width:170px)_and_(min-height:170px)]:px-3 [@container_panel_(min-width:170px)_and_(min-height:170px)]:pb-3 [@container_panel_(min-width:170px)_and_(min-height:170px)]:pt-6 [@container_panel_(min-width:340px)_and_(min-height:90px)]:gap-3 [@container_panel_(min-width:340px)_and_(min-height:90px)]:px-3 [@container_panel_(min-width:340px)_and_(min-height:90px)]:pb-3 [@container_panel_(min-width:340px)_and_(min-height:90px)]:pt-6 [@container_panel_(max-height:260px)_and_(min-width:340px)]:grid-cols-[auto_1fr] [@container_panel_(max-height:260px)_and_(min-width:340px)]:grid-rows-[auto_1fr]">
+        <GaugeTabsSlot>
+          <WindowTabs value={window} onChange={changeWindow} />
+        </GaugeTabsSlot>
+        <SpeedoDial
+          report={report}
+          onRefreshed={onRefreshed}
+          // Default assumes bare (no stack to share room with): fill the
+          // panel, minus this grid's own (bare-sized) overhead — 8px of
+          // horizontal padding (p-1 both sides), 8px of vertical (p-1 both
+          // sides, gap-0 so the two row gaps cost nothing) — capped. cqw/cqh
+          // read the PANEL's box, not this grid's, so that overhead has to be
+          // subtracted explicitly or the dial computes bigger than the room
+          // actually left for it and overflows past the panel's own edge.
+          // Once the portrait/square floor clears (gauge-stack.tsx's REVEAL,
+          // first path) the grid's own padding/gap grows too (see above), and
+          // the stack shows below it, so this reserves ~90px of height for
+          // it. Once the panel goes row instead, bound by height and reserve
+          // ~140px of width for the stack beside it. `place-self-center`
+          // centers it within its grid cell on whichever axis it doesn't fill.
+          className="col-start-1 row-start-2 w-[min(calc(100cqw_-_8px),calc(100cqh_-_8px),216px)] place-self-center [@container_panel_(min-width:170px)_and_(min-height:170px)]:w-[min(90cqw,calc(100cqh_-_90px),216px)] [@container_panel_(max-height:260px)_and_(min-width:340px)]:col-start-1 [@container_panel_(max-height:260px)_and_(min-width:340px)]:row-start-1 [@container_panel_(max-height:260px)_and_(min-width:340px)]:row-span-2 [@container_panel_(max-height:260px)_and_(min-width:340px)]:w-[min(calc(100cqw_-_140px),100cqh,216px)]"
         />
-        <RawUsageBar report={report} />
-        <TokenFooter report={report} />
-        <ExplainerPanel
-          fallback={{
-            title: SEGMENT_BY_ID[report.zone].label,
-            description: SEGMENT_BY_ID[report.zone].description,
-          }}
-        />
-        {!report.signalAvailable && <SignalRefresh onRefreshed={onRefreshed} />}
+        <GaugeStack>
+          <RawUsageBar report={report} />
+          <TokenFooter report={report} />
+          <ExplainerPanel fallback={fallback} />
+        </GaugeStack>
       </div>
     </div>
   );

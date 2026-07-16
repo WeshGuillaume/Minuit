@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Minuit",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "com.minuit.app",
   "build": {
     "frontendDist": "../dist",
@@ -15,7 +15,9 @@
         "title": "Minuit",
         "width": 330,
         "height": 467,
-        "resizable": false,
+        "minWidth": 120,
+        "minHeight": 120,
+        "resizable": true,
         "fullscreen": false,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,

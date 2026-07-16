@@ -16,7 +16,7 @@ export function RawUsageBar({ report }: { report: GaugeReport }) {
   const { currentPct, signalAvailable, hoursUntilReset } = report;
   const pct = Math.max(0, Math.min(100, currentPct));
   return (
-    <div className="w-full px-4">
+    <div className="w-full px-4 [@container_panel_(max-height:260px)_and_(min-width:340px)]:px-0">
       <div className="mb-1 flex items-baseline justify-between text-[10px] text-muted-foreground">
         <span className="tracking-wide">Usage</span>
         <span className="tabular-nums">
@@ -26,7 +26,7 @@ export function RawUsageBar({ report }: { report: GaugeReport }) {
           </span>
         </span>
       </div>
-      <div className="h-px w-full overflow-hidden rounded-full bg-white/10">
+      <div className="h-px w-full overflow-hidden rounded-full bg-white/10 [@container_panel_(max-height:260px)_and_(min-width:340px)]:h-2">
         <div
           className="h-full rounded-full transition-[width] duration-500"
           style={{

@@ -32,16 +32,18 @@ const event = (over: Partial<UsageEvent>): UsageEvent => ({
   ...over,
 });
 
-// One opus turn worth exactly $75 of API value, sent "now" (inside the 1h recent
-// window); a live 7-day constraint at 39%, resetting in 40h; calibrated from a
-// single real window ($2709.47 @ 39% → $69.47/pct).
+// One opus turn worth exactly $75 of API value, sent 30 min ago (inside the 1h
+// recent window, but BEFORE the signal was captured so it doesn't advance the %);
+// a live 7-day constraint at 39%, resetting in 40h; calibrated from a single real
+// window ($2709.47 @ 39% → $69.47/pct).
 const input: GaugeInput = {
   tool: 'claude',
   window: 'seven_day',
   now: NOW,
+  capturedAt: NOW,
   pricing,
   planLabel: 'Max 20×',
-  events: [event({ output: 1_000_000 })],
+  events: [event({ output: 1_000_000, timestamp: NOW - 1_800_000 })],
   constraints: [
     { key: 'seven_day', label: 'Weekly', usedPercent: 39, resetsAt: NOW + 40 * 3_600_000, windowSeconds: 7 * 86_400 },
   ],
@@ -82,6 +84,21 @@ describe('buildGauge (speedometer orchestration)', () => {
     expect(r.landingPct).toBeCloseTo(39 + (75 / (2709.47 / 39)) * 40, 2); // ≈ 82
     expect(r.hoursUntilReset).toBeCloseTo(40, 6);
     expect(r.signalAvailable).toBe(true);
+  });
+
+  it('advances the % locally with burn since the signal was captured', () => {
+    const withBurn = buildGauge({
+      ...input,
+      capturedAt: NOW - 120_000, // the API reading is 2 min old
+      events: [
+        ...input.events,
+        event({ output: 1_000_000, timestamp: NOW - 60_000 }), // $75 burned since capture
+      ],
+    });
+    // livePct = 39 + 75 / 69.47 ≈ 40.08, so the maxxing (sustainable) rate drops
+    expect(withBurn.sustainableRatePct).toBeLessThan(r.sustainableRatePct);
+    expect(withBurn.sustainableRatePct).toBeCloseTo((100 - (39 + 75 / (2709.47 / 39))) / 40, 4);
+    expect(withBurn.currentPct).toBe(39); // the raw bar still shows the exact API anchor
   });
 
   it('forces the capped zone once usage hits 100%, whatever the pace', () => {

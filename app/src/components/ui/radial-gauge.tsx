@@ -7,22 +7,32 @@ import {
   tickInactiveColor,
 } from "@/components/ui/radial-gauge-colors";
 import { TickFilters } from "@/components/ui/radial-gauge-filters";
-import {
-  GaugeTick,
-  type Tick,
-  type TickColor,
-  type TickActiveResolver,
+import type {
+  Tick,
+  TickColor,
+  TickActiveResolver,
 } from "@/components/ui/radial-gauge-tick";
+import { TickRing } from "@/components/ui/radial-gauge-ring";
 
 interface RadialGaugeProps extends React.ComponentProps<"div"> {
   value: number;
   min?: number;
   max?: number;
   tickCount?: number;
+  /** Tick count for the coarse ring shown once the dial's own box drops below
+   * `--container-dial-decorated` (index.css) — fewer, wider marks read better
+   * than a shrunk copy of the fine ring. */
+  compactTickCount?: number;
   startAngle?: number;
   sweepAngle?: number;
   tickLength?: number;
   tickRadius?: number;
+  /** Tick length/radius for the coarse ring (see `compactTickCount`) — longer
+   * and set further in than the fine ring's, so the coarse ring reads as a
+   * bold band filling the dial rather than a thin ring floating in empty
+   * space once the dial has shrunk too far for finesse. */
+  compactTickLength?: number;
+  compactTickRadius?: number;
   scaleLabels?: number[];
   labelRadius?: number;
   formatLabel?: (value: number) => string;
@@ -42,12 +52,19 @@ interface RadialGaugeProps extends React.ComponentProps<"div"> {
   /** A hollow "ghost" marker on the arc (0..1 of the sweep) — e.g. your habitual pace. */
   ghostFraction?: number;
   tickWidth?: number;
+  /** Tick width for the coarse ring (see `compactTickCount`). */
+  compactTickWidth?: number;
   tickInsetShadow?: boolean;
   glow?: number;
   fadeActive?: boolean;
 }
 
 const CENTER = 100;
+
+// Below this, the dial's own box has no room for finesse: the scale labels and
+// the coarse tick ring below take over from the fine one (see index.css).
+const DECORATED_HIDDEN = "hidden @dial-decorated/dial:block";
+const DECORATED_ONLY = "block @dial-decorated/dial:hidden";
 
 function polarToCartesian(radius: number, angleDeg: number) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
@@ -57,15 +74,43 @@ function polarToCartesian(radius: number, angleDeg: number) {
   };
 }
 
+function buildTicks(
+  count: number,
+  startAngle: number,
+  sweepAngle: number,
+  tickRadius: number,
+  tickLength: number,
+  activeAngle: number,
+): Tick[] {
+  return Array.from({ length: count }, (_, index) => {
+    const angle = startAngle + (index / (count - 1)) * sweepAngle;
+    const inner = polarToCartesian(tickRadius - tickLength, angle);
+    const outer = polarToCartesian(tickRadius, angle);
+    return {
+      index,
+      angle,
+      fraction: (angle - startAngle) / sweepAngle,
+      active: angle <= activeAngle,
+      x1: inner.x,
+      y1: inner.y,
+      x2: outer.x,
+      y2: outer.y,
+    };
+  });
+}
+
 function RadialGauge({
   value,
   min = 0,
   max = 100,
   tickCount = 48,
+  compactTickCount = 16,
   startAngle = -130,
   sweepAngle = 260,
   tickLength = 14,
   tickRadius = 92,
+  compactTickLength = 40,
+  compactTickRadius = 94,
   scaleLabels,
   labelRadius = 66,
   formatLabel = (v) => `${v}`,
@@ -79,6 +124,7 @@ function RadialGauge({
   onTickHover,
   ghostFraction,
   tickWidth = 4,
+  compactTickWidth = 6,
   tickInsetShadow = true,
   glow = 0.5,
   fadeActive = true,
@@ -94,22 +140,24 @@ function RadialGauge({
   const activeAngle = startAngle + fraction * sweepAngle;
   const glowIntensity = Math.min(1, Math.max(0, glow));
   const step = sweepAngle / (tickCount - 1);
+  const compactStep = sweepAngle / (compactTickCount - 1);
 
-  const ticks: Tick[] = Array.from({ length: tickCount }, (_, index) => {
-    const angle = startAngle + (index / (tickCount - 1)) * sweepAngle;
-    const inner = polarToCartesian(tickRadius - tickLength, angle);
-    const outer = polarToCartesian(tickRadius, angle);
-    return {
-      index,
-      angle,
-      fraction: (angle - startAngle) / sweepAngle,
-      active: angle <= activeAngle,
-      x1: inner.x,
-      y1: inner.y,
-      x2: outer.x,
-      y2: outer.y,
-    };
-  });
+  const ticks = buildTicks(
+    tickCount,
+    startAngle,
+    sweepAngle,
+    tickRadius,
+    tickLength,
+    activeAngle,
+  );
+  const compactTicks = buildTicks(
+    compactTickCount,
+    startAngle,
+    sweepAngle,
+    compactTickRadius,
+    compactTickLength,
+    activeAngle,
+  );
 
   const labels = (scaleLabels ?? []).map((labelValue) => {
     const labelFraction = (labelValue - min) / (max - min);
@@ -118,11 +166,22 @@ function RadialGauge({
     return { value: labelValue, x, y };
   });
 
+  const ring = {
+    activeColor,
+    inactiveColor,
+    resolveActive,
+    fillDelay,
+    fadeActive,
+    insetId: tickInsetShadow ? insetId : null,
+    glowId: glowIntensity > 0 ? glowId : null,
+    onHover: onTickHover,
+  };
+
   return (
     <div
       data-slot="radial-gauge"
       className={cn(
-        "relative aspect-square w-full max-w-60 -mb-6 flex items-center justify-center",
+        "relative aspect-square w-full max-w-60 -mb-12 flex items-center justify-center",
         className,
       )}
       {...props}
@@ -138,45 +197,54 @@ function RadialGauge({
           glowId={glowId}
           glowIntensity={glowIntensity}
         />
-        <g onMouseLeave={() => onTickHover?.(null)}>
-          {ticks.map((tick) => {
-            const active = resolveActive
-              ? resolveActive(tick, tick.active)
-              : tick.active;
-            return (
-              <GaugeTick
-                key={tick.index}
-                tick={tick}
-                active={active}
-                socketColor={inactiveColor(tick)}
-                fillColor={activeColor(tick)}
-                fillOpacity={fadeActive ? 1 - tick.fraction * 0.05 : 1}
-                tickWidth={tickWidth}
-                socketFilterId={tickInsetShadow ? insetId : null}
-                fillFilterId={glowIntensity > 0 ? glowId : null}
-                fillDelay={fillDelay?.(tick) ?? 0}
-                hitHalfAngle={step / 2}
-                tickRadius={tickRadius}
-                tickLength={tickLength}
-                onHover={onTickHover ?? undefined}
-              />
-            );
-          })}
-        </g>
+        <TickRing
+          {...ring}
+          ticks={ticks}
+          step={step}
+          tickWidth={tickWidth}
+          tickRadius={tickRadius}
+          tickLength={tickLength}
+          className={DECORATED_HIDDEN}
+        />
+        <TickRing
+          {...ring}
+          ticks={compactTicks}
+          step={compactStep}
+          tickWidth={compactTickWidth}
+          tickRadius={compactTickRadius}
+          tickLength={compactTickLength}
+          className={DECORATED_ONLY}
+        />
         {ghostFraction != null &&
           (() => {
+            // Two markers, not one: the ghost sits just past the tick radius,
+            // and that radius differs between the fine and coarse rings (see
+            // compactTickRadius above) — anchoring to the fine ring's radius
+            // alone left it floating outside the coarse ring once the dial
+            // shrank far enough to swap rings.
             const angle =
               startAngle + Math.min(1, Math.max(0, ghostFraction)) * sweepAngle;
-            const { x, y } = polarToCartesian(tickRadius + 5, angle);
+            const fine = polarToCartesian(tickRadius + 5, angle);
+            const compact = polarToCartesian(compactTickRadius + 5, angle);
             return (
-              <circle
-                cx={x}
-                cy={y}
-                r={2.6}
-                className="fill-none stroke-muted-foreground"
-                strokeWidth={1.4}
-                opacity={0.75}
-              />
+              <>
+                <circle
+                  cx={fine.x}
+                  cy={fine.y}
+                  r={2.6}
+                  className={`fill-none stroke-muted-foreground ${DECORATED_HIDDEN}`}
+                  strokeWidth={1.4}
+                  opacity={0.75}
+                />
+                <circle
+                  cx={compact.x}
+                  cy={compact.y}
+                  r={2.6}
+                  className={`fill-none stroke-muted-foreground ${DECORATED_ONLY}`}
+                  strokeWidth={1.4}
+                  opacity={0.75}
+                />
+              </>
             );
           })()}
         {labels.map((label) => (
@@ -186,7 +254,7 @@ function RadialGauge({
             y={label.y}
             textAnchor="middle"
             dominantBaseline="middle"
-            className="fill-muted-foreground font-medium"
+            className="fill-muted-foreground font-medium hidden @dial-decorated/dial:inline"
             style={{ fontSize: 9 }}
           >
             {formatLabel(label.value)}
@@ -204,7 +272,12 @@ function RadialGauge({
         ) : null}
       </div>
       {bottomSlot ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-12 flex justify-center">
+        // bottom-[12%], not a fixed bottom-12: this sits in the arc's open
+        // gap, and that gap is a FRACTION of the dial's own size (the SVG
+        // scales as a whole), not a fixed 48px — at a small dial size a fixed
+        // offset landed past the middle of the box, overlapping the center
+        // readout instead of sitting in the gap below it.
+        <div className="pointer-events-none absolute inset-x-0 bottom-[5%] flex justify-center">
           <div className="pointer-events-auto">{bottomSlot}</div>
         </div>
       ) : null}

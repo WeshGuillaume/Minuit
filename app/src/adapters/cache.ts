@@ -10,14 +10,23 @@ interface Entry<T> {
   value: T;
 }
 
-export const readCache = async <T>(name: string, ttlMs: number): Promise<T | null> => {
+// Read the full entry (value + write time) when still within TTL. `at` lets a
+// caller know HOW OLD the cached value is — used to extrapolate a live figure
+// from a throttled signal (see buildGauge's currentPct advance).
+export const readCacheEntry = async <T>(
+  name: string,
+  ttlMs: number,
+): Promise<{ value: T; at: number } | null> => {
   try {
     const entry = JSON.parse(await readTextFile(await gaugePath(name))) as Entry<T>;
-    return Date.now() - entry.at <= ttlMs ? entry.value : null;
+    return Date.now() - entry.at <= ttlMs ? { value: entry.value, at: entry.at } : null;
   } catch {
     return null;
   }
 };
+
+export const readCache = async <T>(name: string, ttlMs: number): Promise<T | null> =>
+  (await readCacheEntry<T>(name, ttlMs))?.value ?? null;
 
 export const writeCache = async <T>(name: string, value: T): Promise<void> => {
   try {

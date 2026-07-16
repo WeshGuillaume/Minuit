@@ -9,7 +9,7 @@ import { bindingWindow } from '@core/limits/binding-window';
 import { scanAllEvents } from './scan';
 import type { Credentials } from './credentials';
 import { freshCredentials } from './token';
-import { fetchUsage, probeAndCache } from './usage-api';
+import { fetchUsageMeta, probeAndCache, type UsageWithMeta } from './usage-api';
 import { parseUsage, windowKeyOf } from './usage-parse';
 import { loadPricing } from './pricing';
 import { buildCalibration } from './calibration';
@@ -26,21 +26,22 @@ const PLAN_LABELS: Record<string, string> = {
 };
 
 // A just-refreshed token bypasses the cache so a stale negative (401) entry
-// can't mask it; otherwise the normal 180s-cached path is used.
-const usageBody = async (creds: Credentials, bypassCache: boolean): Promise<unknown | null> => {
+// can't mask it; otherwise the normal 180s-cached path is used. Either way we
+// carry `capturedAt` so buildGauge can advance the % locally between hits.
+const usageSignal = async (creds: Credentials, bypassCache: boolean): Promise<UsageWithMeta> => {
   if (bypassCache) {
     const probe = await probeAndCache(creds);
-    return probe.ok ? probe.body : null;
+    return { body: probe.ok ? probe.body : null, capturedAt: Date.now() };
   }
-  return fetchUsage(creds);
+  return fetchUsageMeta(creds);
 };
 
 const liveConstraints = async (window: WindowKey, now: number) => {
   const { creds, refreshed } = await freshCredentials();
-  if (!creds) return [];
-  const usage = await usageBody(creds, refreshed);
-  const all = usage ? parseUsage(usage, now) : [];
-  return all.filter((c) => windowKeyOf(c.key) === window);
+  if (!creds) return { constraints: [], capturedAt: now };
+  const { body, capturedAt } = await usageSignal(creds, refreshed);
+  const all = body ? parseUsage(body, now) : [];
+  return { constraints: all.filter((c) => windowKeyOf(c.key) === window), capturedAt };
 };
 
 export const buildRealInput = async (tool: ToolId, window: WindowKey): Promise<GaugeInput> => {
@@ -55,10 +56,11 @@ export const buildRealInput = async (tool: ToolId, window: WindowKey): Promise<G
   const DAY_MS = 86_400_000;
   const sinceMs = Math.floor((now - lookbackMs) / DAY_MS) * DAY_MS;
 
-  const [allEvents, constraints] = await Promise.all([
+  const [allEvents, live] = await Promise.all([
     scanAllEvents(sinceMs),
     liveConstraints(window, now),
   ]);
+  const { constraints, capturedAt } = live;
 
   const lookbackEvents = allEvents.filter((e) => e.timestamp >= now - lookbackMs);
   const windowEvents = allEvents.filter((e) => e.timestamp >= now - windowSeconds * 1_000);
@@ -68,6 +70,7 @@ export const buildRealInput = async (tool: ToolId, window: WindowKey): Promise<G
     tool,
     window,
     now,
+    capturedAt,
     pricing,
     planLabel: PLAN_LABELS[pricing.activePlan] ?? pricing.activePlan,
     events: windowEvents,

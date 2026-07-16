@@ -6,7 +6,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import type { Credentials } from './credentials';
-import { readCache, writeCache } from './cache';
+import { readCache, readCacheEntry, writeCache } from './cache';
 
 const CACHE_FILE = 'usage-cache.json';
 const CACHE_TTL = 180_000;
@@ -54,4 +54,18 @@ export const fetchUsage = async (creds: Credentials): Promise<unknown | null> =>
   if (cached) return cached.ok ? cached.body : null;
   const probe = await probeAndCache(creds);
   return probe.ok ? probe.body : null;
+};
+
+/** The usage body plus WHEN it was observed (cache write time, or now if fresh),
+ *  so the caller can extrapolate a live figure between throttled network hits. */
+export interface UsageWithMeta {
+  body: unknown | null;
+  capturedAt: number;
+}
+
+export const fetchUsageMeta = async (creds: Credentials): Promise<UsageWithMeta> => {
+  const cached = await readCacheEntry<CachedUsage>(CACHE_FILE, CACHE_TTL);
+  if (cached) return { body: cached.value.ok ? cached.value.body : null, capturedAt: cached.at };
+  const probe = await probeAndCache(creds);
+  return { body: probe.ok ? probe.body : null, capturedAt: Date.now() };
 };

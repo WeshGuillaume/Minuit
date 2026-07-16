@@ -9,20 +9,24 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { RefreshCw } from 'lucide-react'
 import type { GaugeReport } from '@core/types'
 import { SEGMENTS } from '@core/track/segments'
 import { cn } from '@/lib/utils'
 import { ShimmerText } from './shimmer-text'
+import { useSignalRefresh } from './use-signal-refresh'
 
 const ZONE_LABEL = Object.fromEntries(SEGMENTS.map((s) => [s.id, s.label])) as Record<string, string>
 const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })
 
 type Mode = 'pace' | 'rate'
 
+// Signal is guaranteed live here (no-signal is handled by SignalCenter upstream);
+// the only special case left is a hit cap, where pace collapses to a bare 0×.
 const MODES: Record<Mode, { value: (r: GaugeReport) => string; caption: (r: GaugeReport) => string }> = {
   pace: {
-    value: (r) => (!r.signalAvailable || r.currentPct >= 100 ? '—' : `${r.pace.toFixed(1)}×`),
-    caption: (r) => (r.signalAvailable ? ZONE_LABEL[r.zone] : 'no signal'),
+    value: (r) => (r.currentPct >= 100 ? '—' : `${r.pace.toFixed(1)}×`),
+    caption: (r) => ZONE_LABEL[r.zone],
   },
   rate: {
     value: (r) => (r.tokens.perHour > 0 ? compact.format(r.tokens.perHour) : '—'),
@@ -40,7 +44,11 @@ const loadMode = (): Mode => {
 }
 
 const spring = { type: 'spring', stiffness: 550, damping: 32 } as const
-const VALUE_CLASS = 'text-2xl font-normal tabular-nums text-foreground'
+// Smaller by default (a compact dial, between dial-interactive and
+// dial-captioned, still shows the number but has no room for text-2xl);
+// steps back up once the dial has cleared dial-captioned and there's a
+// caption underneath it again to balance against.
+const VALUE_CLASS = 'text-lg font-normal tabular-nums text-foreground @dial-captioned/dial:text-2xl'
 
 function PopValue({ value, className }: { value: string; className: string }) {
   return (
@@ -92,7 +100,7 @@ export function RegionRange({ low, high }: { low: number; high: number }) {
           exit={{ opacity: 0, y: -8 }}
           transition={spring}
           className={cn(
-            'whitespace-nowrap text-base font-normal tabular-nums text-foreground',
+            'whitespace-nowrap text-sm font-normal tabular-nums text-foreground @dial-captioned/dial:text-base',
           )}
         >
           {label}
@@ -102,8 +110,40 @@ export function RegionRange({ low, high }: { low: number; high: number }) {
   )
 }
 
-export function GaugeCenter({ report }: { report: GaugeReport }) {
+// No live signal: the pace is meaningless, so the center IS the recovery button.
+// One click runs the OAuth refresh + re-probe; spins while busy, reds out on error.
+function SignalCenter({ onRefreshed }: { onRefreshed?: () => void }) {
+  const { run, busy, error } = useSignalRefresh(onRefreshed)
+  return (
+    <button
+      type="button"
+      onClick={run}
+      disabled={busy}
+      className="pointer-events-auto flex cursor-pointer flex-col items-center gap-1.5 leading-none outline-none disabled:cursor-default"
+    >
+      <RefreshCw className={cn('size-5 text-foreground/90', busy && 'animate-spin')} />
+      <span
+        className={cn(
+          'text-[10px] font-medium uppercase tracking-wide',
+          error ? 'text-red-400' : 'text-muted-foreground',
+        )}
+      >
+        {busy ? 'refresh…' : (error ?? 'no signal · retry')}
+      </span>
+    </button>
+  )
+}
+
+export function GaugeCenter({
+  report,
+  onRefreshed,
+}: {
+  report: GaugeReport
+  onRefreshed?: () => void
+}) {
   const [mode, setMode] = useState<Mode>(loadMode)
+
+  if (!report.signalAvailable) return <SignalCenter onRefreshed={onRefreshed} />
 
   const toggle = () => {
     const next = nextMode(mode)
@@ -120,7 +160,7 @@ export function GaugeCenter({ report }: { report: GaugeReport }) {
       <PopValue value={m.value(report)} className={VALUE_CLASS} />
       <ShimmerValue
         value={m.caption(report)}
-        className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+        className="mt-1 hidden text-[10px] font-medium uppercase tracking-wide text-muted-foreground @dial-captioned/dial:block"
       />
     </span>
   )

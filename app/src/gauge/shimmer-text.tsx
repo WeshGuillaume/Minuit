@@ -5,15 +5,21 @@
 // All glyphs share ONE period (gap + n·stagger) and differ only by their start
 // delay, so the wave stays coherent across loops instead of drifting apart.
 
-import { motion } from 'motion/react'
+import { motion } from "motion/react";
 
-const STAGGER = 0.11 // s between adjacent letters lighting up
-const PULSE = 1.2 // s for one letter to brighten and dim back
-const GAP = 2.6 // s the wave rests before sweeping again (keeps it "slow")
+const STAGGER = 0.11; // s between adjacent letters lighting up
+const PULSE = 1.2; // s for one letter to brighten and dim back
+const GAP = 2.6; // s the wave rests before sweeping again (keeps it "slow")
 
-export function ShimmerText({ text, className }: { text: string; className?: string }) {
-  const chars = [...text]
-  const period = GAP + chars.length * STAGGER
+export function ShimmerText({
+  text,
+  className,
+}: {
+  text: string;
+  className?: string;
+}) {
+  const chars = [...text];
+  const period = GAP + chars.length * STAGGER;
 
   return (
     // Plain inline span (not flex) so the caption's letter-spacing still applies.
@@ -23,23 +29,23 @@ export function ShimmerText({ text, className }: { text: string; className?: str
           key={`${i}-${ch}`}
           aria-hidden
           className="inline-block"
-          initial={{ opacity: 0.6, filter: 'brightness(0.75)' }}
+          initial={{ opacity: 0.9, filter: "brightness(0.9)" }}
           animate={{
-            opacity: [0.6, 1, 0.6],
-            filter: ['brightness(0.75)', 'brightness(1.5)', 'brightness(0.75)'],
+            opacity: [0.9, 1, 0.9],
+            filter: ["brightness(0.9)", "brightness(1.5)", "brightness(0.9)"],
           }}
           transition={{
             duration: PULSE,
             times: [0, 0.5, 1],
-            ease: 'easeInOut',
+            ease: "easeInOut",
             repeat: Infinity,
             repeatDelay: period - PULSE,
             delay: i * STAGGER,
           }}
         >
-          {ch === ' ' ? ' ' : ch}
+          {ch === " " ? " " : ch}
         </motion.span>
       ))}
     </span>
-  )
+  );
 }

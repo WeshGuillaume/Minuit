@@ -1,46 +1,12 @@
-// Opt-in Axis-2 recovery: shown only when the live signal is unavailable (most
-// often an expired Keychain token). One click runs the OAuth refresh, then asks
-// the page to reload its report. This is the sole user-facing path that writes
-// credentials — nothing here fires without an explicit click.
+// Opt-in Axis-2 recovery banner, shown when the live signal is unavailable (most
+// often an expired Keychain token). One click runs the OAuth refresh + re-probe
+// via useSignalRefresh, then reloads. The gauge center offers the same action
+// inline (see SignalCenter); this is the fuller banner variant with the error text.
 
-import { useState } from 'react'
-import { refreshCredentials, type RefreshResult } from '../adapters/refresh'
-import { readCredentials } from '../adapters/credentials'
-import { probeAndCache } from '../adapters/usage-api'
-import { parseUsage } from '../adapters/usage-parse'
-
-const ERRORS: Record<Exclude<RefreshResult, 'ok'>, string> = {
-  'no-token': 'Aucun token à rafraîchir',
-  'refresh-failed': 'Échec du refresh (endpoint ou refresh token)',
-  'write-failed': 'Écriture Keychain refusée',
-}
+import { useSignalRefresh } from './use-signal-refresh'
 
 export function SignalRefresh({ onRefreshed }: { onRefreshed: () => void }) {
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const run = async () => {
-    setBusy(true)
-    setError(null)
-    try {
-      const result = await refreshCredentials()
-      if (result !== 'ok') {
-        setError(ERRORS[result])
-        return
-      }
-      // Token refreshed. Make exactly ONE usage call (which warms the cache) so
-      // the reload reuses it instead of hitting the endpoint again back-to-back.
-      const creds = await readCredentials()
-      const probe = creds ? await probeAndCache(creds) : null
-      if (probe?.ok && parseUsage(probe.body, Date.now()).length > 0) onRefreshed()
-      else setError(`Token OK · usage ${probe?.status ?? probe?.error ?? '—'}`)
-    } catch (e) {
-      console.error('[cc-gauge refresh] threw', e)
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setBusy(false)
-    }
-  }
+  const { run, busy, error } = useSignalRefresh(onRefreshed)
 
   return (
     <div className="mt-3 flex flex-col items-center gap-1">

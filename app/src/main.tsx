@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './app.tsx'
 import { doctor } from './adapters/doctor'
+import { installWindowBehavior } from './adapters/window-behavior'
+
+void installWindowBehavior()
 
 if (import.meta.env.DEV) {
   // Run `await ccgaugeDoctor()` in the devtools console to inspect Axis 2.

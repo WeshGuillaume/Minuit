@@ -102,6 +102,12 @@ function GaugeTick({
         <path
           d={hitWedge(tick.angle, hitHalfAngle, tickRadius - tickLength - 6, tickRadius + 6)}
           fill="transparent"
+          // Below --container-dial-decorated (index.css) the dial swaps to its
+          // coarse ring — its reduced mode. There the wedges are too cramped to
+          // isolate a zone meaningfully, so the hit target goes inert via an
+          // !important override of the inline pointer-events. Above the
+          // threshold only the fine ring is visible, so its hover still works.
+          className="[@container_dial_(max-width:190px)]:pointer-events-none!"
           style={{ pointerEvents: "all", cursor: "pointer" }}
           onMouseEnter={() => onHover(tick)}
         />

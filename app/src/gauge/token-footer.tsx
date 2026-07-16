@@ -100,7 +100,11 @@ export function TokenFooter({ report }: { report: GaugeReport }) {
   const [hovered, setHovered] = useState<string | null>(null)
   const [home, setHome] = useState<string | null>(null)
   return (
-    <div className="flex items-center justify-center gap-1">
+    // Each stat is its own rounded-full px-2.5 pill (for the hover highlight),
+    // so left-aligned (row mode) the row reads 10px indented against the
+    // flush-left usage bar above it — the same pill-padding mismatch the tabs
+    // have (see gauge-stack.tsx), fixed the same way: outdent the whole row.
+    <div className="flex items-center justify-center gap-1 [@container_panel_(max-height:260px)_and_(min-width:340px)]:-ml-2.5 [@container_panel_(max-height:260px)_and_(min-width:340px)]:justify-start">
       {stats(report).map(({ key, ...stat }) => (
         <FooterStat
           key={key}

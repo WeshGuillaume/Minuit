@@ -60,6 +60,13 @@ body {
     overflow: hidden;
 }
 
+/* This is a native-feeling utility window, not a document — no text to copy,
+   and selection highlighting on drag/click just looks like a rendering glitch. */
+* {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
 /* Base colours/typography: local design tokens (@layer base + .dark below). */
 
 /* Axis-1 warning light flicker — registered as the `animate-thunder-flicker`
@@ -82,6 +89,9 @@ body {
 }
 
 @theme inline {
+    --container-dial-interactive: 90px;
+    --container-dial-captioned: 130px;
+    --container-dial-decorated: 190px;
     --animate-thunder-flicker: thunder-flicker 3.4s steps(1, end) infinite;
     --font-heading: var(--font-sans);
     --font-sans: "Geist Variable", sans-serif;

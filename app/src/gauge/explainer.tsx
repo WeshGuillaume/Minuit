@@ -61,13 +61,31 @@ const line = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.12 } },
 } as const;
 
-/** The single description panel. Shows the active override, else the fallback. */
+// Tailwind's scanner needs the full class name as a static string literal, so
+// these thresholds live only in the classes below, not as interpolated
+// constants — keep the two in sync by hand if they ever need to move.
+//
+// They're set against the "stack" container's TOTAL height, not the
+// explainer's own — its siblings (the usage bar and token footer; tabs live
+// outside the stack, see gauge-stack.tsx) plus their gaps already claim
+// ~68px before this panel gets anything, so the floors sit above that (title
+// line measures ~24px, title+description ~78px) to leave it real room
+// instead of clipping mid-line against the panel's overflow-hidden.
+// Hidden below 100px of stack height; title-only below 150px.
+
+/**
+ * The single description panel. Shows the active override, else the fallback.
+ * Always rendered — visibility is pure CSS, driven by the "stack" named
+ * container's own height (see index.css / gauge-stack.tsx), so it degrades
+ * from full text to title-only to fully hidden as its region shrinks, with no
+ * layout prop and no measurement flash.
+ */
 export function ExplainerPanel({ fallback }: { fallback: ExplainerContent }) {
   const { override } = useExplainer();
   const { title, description } = override ?? fallback;
   return (
     <LazyMotion features={domAnimation}>
-      <div className="mx-auto text-balance px-4 text-center font-[Helvetica,Arial,sans-serif]">
+      <div className="hidden mx-auto w-full text-balance px-4 text-center font-[Helvetica,Arial,sans-serif] [@container_stack_(min-height:100px)]:block [@container_panel_(max-height:260px)_and_(min-width:340px)]:mx-0 [@container_panel_(max-height:260px)_and_(min-width:340px)]:px-0 [@container_panel_(max-height:260px)_and_(min-width:340px)]:text-left">
         <AnimatePresence mode="wait" initial={false}>
           <m.div
             key={title + description}
@@ -84,7 +102,7 @@ export function ExplainerPanel({ fallback }: { fallback: ExplainerContent }) {
             </m.p>
             <m.p
               variants={line}
-              className="text-xs leading-normal text-[#aaaaaa] line-clamp-3 h-[3lh]"
+              className="hidden text-xs leading-normal text-[#aaaaaa] line-clamp-3 h-[3lh] [@container_stack_(min-height:150px)]:block"
             >
               {description}
             </m.p>

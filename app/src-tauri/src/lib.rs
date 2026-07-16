@@ -3,7 +3,9 @@
 // reqwest call carries no Origin header so it is not treated as one. The token
 // is passed in from the JS credentials reader; nothing is persisted here.
 
+mod config;
 mod scan;
+mod window;
 
 #[derive(serde::Serialize)]
 struct UsageProbe {
@@ -49,6 +51,34 @@ async fn scan_events(
         .map_err(|e| e.to_string())
 }
 
+// Installs the global-shortcut plugin (its handler toggles the window on every
+// press) and binds the hotkey from config. An unparseable or absent shortcut
+// simply leaves the app without a hotkey.
+#[cfg(desktop)]
+fn register_appear_shortcut(
+  app: &tauri::AppHandle,
+  cfg: &config::Config,
+) -> Result<(), Box<dyn std::error::Error>> {
+  use tauri_plugin_global_shortcut::{Builder, GlobalShortcutExt, Shortcut, ShortcutState};
+
+  app.plugin(
+    Builder::new()
+      .with_handler(|app, _shortcut, event| {
+        if event.state == ShortcutState::Pressed {
+          window::toggle(app);
+        }
+      })
+      .build(),
+  )?;
+
+  if let Some(spec) = &cfg.appear_shortcut {
+    if let Ok(shortcut) = spec.parse::<Shortcut>() {
+      let _ = app.global_shortcut().register(shortcut);
+    }
+  }
+  Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -56,22 +86,28 @@ pub fn run() {
     .plugin(tauri_plugin_http::init())
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_decorum::init())
-    .invoke_handler(tauri::generate_handler![fetch_usage, scan_events])
+    .invoke_handler(tauri::generate_handler![
+      fetch_usage,
+      scan_events,
+      config::get_config
+    ])
     .setup(|app| {
+      use tauri::Manager;
+      let handle = app.handle();
+      let cfg = config::load(handle);
+
       #[cfg(desktop)]
       {
-        app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
-        app.handle().plugin(tauri_plugin_process::init())?;
+        handle.plugin(tauri_plugin_updater::Builder::new().build())?;
+        handle.plugin(tauri_plugin_process::init())?;
+        register_appear_shortcut(handle, &cfg)?;
       }
 
-      // Inset the macOS traffic lights so they clear the rounded window corner.
-      #[cfg(target_os = "macos")]
-      {
-        use tauri::Manager;
-        use tauri_plugin_decorum::WebviewWindowExt;
-        let main = app.get_webview_window("main").unwrap();
-        main.set_traffic_lights_inset(16.0, 20.0).unwrap();
-      }
+      // Apply all runtime settings (size, always-on-top, Dock/Cmd+Tab presence,
+      // traffic lights) from `~/.minuit/config.json` to the main window.
+      let main = app.get_webview_window("main").unwrap();
+      window::apply(handle, &main, &cfg);
+
       if cfg!(debug_assertions) {
         app.handle().plugin(
           tauri_plugin_log::Builder::default()

@@ -25,7 +25,7 @@ export const DEFAULT_PRICING: Pricing = {
   ratioThresholds: { underuse: 0.5, breakEven: 1.1 },
   projection: { lookbackWeeks: 4 },
   pace: {
-    recentWindowHours: 1,
+    recentWindowHours: 0.5, // live-burn window for the needle; shorter = nervier
     thresholds: { underfarm: 0.5, slow: 0.85, fast: 1.15, redline: 1.5, blown: 2 },
   },
 };
