@@ -1,35 +1,37 @@
-// Bannière de mise à jour : discrète, pinnée en bas de la fenêtre. Apparaît
-// seulement quand une version est disponible ou en cours de téléchargement.
+// Overlay de mise à jour : plein écran, bloquant, sans possibilité de le fermer.
+// Dès qu'une version est détectée, le téléchargement + l'installation démarrent
+// automatiquement (voir useUpdater) ; cet écran ne fait qu'en montrer l'avancement.
 
+import { Loader2 } from "lucide-react";
 import { useUpdater } from "@/lib/updater";
 
 export function UpdateBanner() {
-  const { state, install } = useUpdater();
+  const { state } = useUpdater();
 
-  if (state.phase === "available") {
+  if (state.phase === "downloading") {
     return (
-      <Bar>
-        <span className="truncate">Version {state.update.version} disponible</span>
-        <button
-          onClick={install}
-          className="inline-flex h-6 shrink-0 items-center justify-center gap-1 rounded-[min(var(--radius-md),10px)] bg-primary px-2 text-xs font-medium whitespace-nowrap text-primary-foreground transition-all outline-none select-none hover:bg-primary/80 focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-        >
-          Mettre à jour
-        </button>
-      </Bar>
+      <Overlay>
+        <Loader2 className="size-6 animate-spin text-primary" />
+        <span className="text-sm">Mise à jour {state.version}… {Math.round(state.percent * 100)}%</span>
+      </Overlay>
     );
   }
 
-  if (state.phase === "downloading") {
-    return <Bar>Téléchargement… {Math.round(state.percent * 100)}%</Bar>;
+  if (state.phase === "relaunching") {
+    return (
+      <Overlay>
+        <Loader2 className="size-6 animate-spin text-primary" />
+        <span className="text-sm">Redémarrage…</span>
+      </Overlay>
+    );
   }
 
   return null;
 }
 
-function Bar({ children }: { children: React.ReactNode }) {
+function Overlay({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-2 border-t border-border bg-background/90 px-3 py-2 text-xs text-foreground backdrop-blur">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/95 text-foreground backdrop-blur">
       {children}
     </div>
   );

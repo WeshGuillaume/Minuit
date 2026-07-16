@@ -44,11 +44,11 @@ const loadMode = (): Mode => {
 }
 
 const spring = { type: 'spring', stiffness: 550, damping: 32 } as const
-// Smaller by default (a compact dial, between dial-interactive and
-// dial-captioned, still shows the number but has no room for text-2xl);
-// steps back up once the dial has cleared dial-captioned and there's a
-// caption underneath it again to balance against.
-const VALUE_CLASS = 'text-lg font-normal tabular-nums text-foreground @dial-captioned/dial:text-2xl'
+// Never hidden, just ever smaller: text-xs below dial-interactive (the
+// smallest dials this ever renders at), stepping up through dial-captioned
+// once there's room to match a caption underneath it again.
+const VALUE_CLASS =
+  'text-xs font-normal tabular-nums text-foreground @dial-interactive/dial:text-lg @dial-captioned/dial:text-2xl'
 
 function PopValue({ value, className }: { value: string; className: string }) {
   return (

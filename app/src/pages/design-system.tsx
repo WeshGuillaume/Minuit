@@ -55,6 +55,9 @@ const mock = (over: Partial<GaugeReport>): GaugeReport => {
 };
 
 const MAXXING = mock({ pace: 1.0, currentPct: 55, landingPct: 99 });
+// Longest zone label ("Underfarming") — the real-world case that wraps onto a
+// second line at the smallest dial sizes if the label isn't dropped in time.
+const UNDERFARMING = mock({ pace: 0.3, currentPct: 20, landingPct: 40 });
 
 // A live gauge fixed to a given box, with its own explainer scope and window
 // state — exactly how it renders in the app, only the size is pinned.
@@ -95,6 +98,7 @@ const SIZES: { label: string; width: number; height: number }[] = [
   { label: "Micro landscape → icon tabs", width: 377, height: 120 },
   { label: "Bare tiny square", width: 120, height: 120 },
   { label: "Bare tiny", width: 150, height: 150 },
+  { label: "Below OS minimum", width: 80, height: 80 },
 ];
 
 // A resizable box (drag the bottom-right corner) to sweep every in-between size.
@@ -145,6 +149,12 @@ export default function DesignSystem() {
         {SIZES.map((s) => (
           <Specimen key={s.label} {...s} />
         ))}
+        <div className="flex flex-col items-center gap-2">
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            Below OS minimum, longest label · 80×80
+          </span>
+          <Frame report={UNDERFARMING} width={80} height={80} />
+        </div>
         <Playground />
       </Section>
 

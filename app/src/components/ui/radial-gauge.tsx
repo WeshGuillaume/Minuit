@@ -178,109 +178,125 @@ function RadialGauge({
   };
 
   return (
+    // The sweep is open at the bottom (260° of 360°), so a perfectly square
+    // box always has dead space below the lowest tick/badge — cropped here by
+    // giving the OUTER box a shorter aspect ratio with overflow-hidden, while
+    // the INNER box stays a true, undistorted square pinned to its top. Every
+    // internal position (ticks, center label, bottomSlot) is computed against
+    // that inner square exactly as before; only the outer crop is new.
+    //
+    // Kept small (0.95, not a more aggressive crop): below --container-dial-
+    // decorated the badge is replaced by the zone-name label (speedo-dial.tsx),
+    // which is the common case across most realistic dial sizes, not the rare
+    // one — a bigger crop reliably clipped that label at the smallest sizes,
+    // since this ratio can't itself react to the dial's own size (it's the
+    // dial's OWN box being sized, so it can't query itself).
     <div
       data-slot="radial-gauge"
       className={cn(
-        "relative aspect-square w-full max-w-60 -mb-12 flex items-center justify-center",
+        "relative aspect-[1/0.95] w-full max-w-60 -mb-12 overflow-hidden",
         className,
       )}
       {...props}
     >
-      <svg
-        viewBox="0 0 200 200"
-        className="size-full"
-        role="img"
-        aria-label={formatLabel(clamped)}
-      >
-        <TickFilters
-          insetId={insetId}
-          glowId={glowId}
-          glowIntensity={glowIntensity}
-        />
-        <TickRing
-          {...ring}
-          ticks={ticks}
-          step={step}
-          tickWidth={tickWidth}
-          tickRadius={tickRadius}
-          tickLength={tickLength}
-          className={DECORATED_HIDDEN}
-        />
-        <TickRing
-          {...ring}
-          ticks={compactTicks}
-          step={compactStep}
-          tickWidth={compactTickWidth}
-          tickRadius={compactTickRadius}
-          tickLength={compactTickLength}
-          className={DECORATED_ONLY}
-        />
-        {ghostFraction != null &&
-          (() => {
-            // Two markers, not one: the ghost sits just past the tick radius,
-            // and that radius differs between the fine and coarse rings (see
-            // compactTickRadius above) — anchoring to the fine ring's radius
-            // alone left it floating outside the coarse ring once the dial
-            // shrank far enough to swap rings.
-            const angle =
-              startAngle + Math.min(1, Math.max(0, ghostFraction)) * sweepAngle;
-            const fine = polarToCartesian(tickRadius + 5, angle);
-            const compact = polarToCartesian(compactTickRadius + 5, angle);
-            return (
-              <>
-                <circle
-                  cx={fine.x}
-                  cy={fine.y}
-                  r={2.6}
-                  className={`fill-none stroke-muted-foreground ${DECORATED_HIDDEN}`}
-                  strokeWidth={1.4}
-                  opacity={0.75}
-                />
-                <circle
-                  cx={compact.x}
-                  cy={compact.y}
-                  r={2.6}
-                  className={`fill-none stroke-muted-foreground ${DECORATED_ONLY}`}
-                  strokeWidth={1.4}
-                  opacity={0.75}
-                />
-              </>
-            );
-          })()}
-        {labels.map((label) => (
-          <text
-            key={label.value}
-            x={label.x}
-            y={label.y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="fill-muted-foreground font-medium hidden @dial-decorated/dial:inline"
-            style={{ fontSize: 9 }}
-          >
-            {formatLabel(label.value)}
-          </text>
-        ))}
-      </svg>
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-lg font-normal text-foreground">
-          {centerLabel ?? (
-            <NumberFlow value={Math.round(clamped)} suffix={centerSuffix} />
-          )}
-        </span>
-        {children ? (
-          <div className="pointer-events-auto mt-1">{children}</div>
+      <div className="absolute inset-x-0 top-0 flex aspect-square w-full items-center justify-center">
+        <svg
+          viewBox="0 0 200 200"
+          className="size-full"
+          role="img"
+          aria-label={formatLabel(clamped)}
+        >
+          <TickFilters
+            insetId={insetId}
+            glowId={glowId}
+            glowIntensity={glowIntensity}
+          />
+          <TickRing
+            {...ring}
+            ticks={ticks}
+            step={step}
+            tickWidth={tickWidth}
+            tickRadius={tickRadius}
+            tickLength={tickLength}
+            className={DECORATED_HIDDEN}
+          />
+          <TickRing
+            {...ring}
+            ticks={compactTicks}
+            step={compactStep}
+            tickWidth={compactTickWidth}
+            tickRadius={compactTickRadius}
+            tickLength={compactTickLength}
+            className={DECORATED_ONLY}
+          />
+          {ghostFraction != null &&
+            (() => {
+              // Two markers, not one: the ghost sits just past the tick
+              // radius, and that radius differs between the fine and coarse
+              // rings (see compactTickRadius above) — anchoring to the fine
+              // ring's radius alone left it floating outside the coarse ring
+              // once the dial shrank far enough to swap rings.
+              const angle =
+                startAngle +
+                Math.min(1, Math.max(0, ghostFraction)) * sweepAngle;
+              const fine = polarToCartesian(tickRadius + 5, angle);
+              const compact = polarToCartesian(compactTickRadius + 5, angle);
+              return (
+                <>
+                  <circle
+                    cx={fine.x}
+                    cy={fine.y}
+                    r={2.6}
+                    className={`fill-none stroke-muted-foreground ${DECORATED_HIDDEN}`}
+                    strokeWidth={1.4}
+                    opacity={0.75}
+                  />
+                  <circle
+                    cx={compact.x}
+                    cy={compact.y}
+                    r={2.6}
+                    className={`fill-none stroke-muted-foreground ${DECORATED_ONLY}`}
+                    strokeWidth={1.4}
+                    opacity={0.75}
+                  />
+                </>
+              );
+            })()}
+          {labels.map((label) => (
+            <text
+              key={label.value}
+              x={label.x}
+              y={label.y}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="fill-muted-foreground font-medium hidden @dial-decorated/dial:inline"
+              style={{ fontSize: 9 }}
+            >
+              {formatLabel(label.value)}
+            </text>
+          ))}
+        </svg>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-lg font-normal text-foreground">
+            {centerLabel ?? (
+              <NumberFlow value={Math.round(clamped)} suffix={centerSuffix} />
+            )}
+          </span>
+          {children ? (
+            <div className="pointer-events-auto mt-1">{children}</div>
+          ) : null}
+        </div>
+        {bottomSlot ? (
+          // bottom-0, not -bottom-1: hanging a px or two past the inner
+          // square's own edge was harmless when nothing clipped it, but the
+          // OUTER crop above now does — sitting flush with the inner square's
+          // bottom instead keeps it inside both the crop and the inner
+          // square, at any dial size.
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center">
+            <div className="pointer-events-auto">{bottomSlot}</div>
+          </div>
         ) : null}
       </div>
-      {bottomSlot ? (
-        // bottom-[12%], not a fixed bottom-12: this sits in the arc's open
-        // gap, and that gap is a FRACTION of the dial's own size (the SVG
-        // scales as a whole), not a fixed 48px — at a small dial size a fixed
-        // offset landed past the middle of the box, overlapping the center
-        // readout instead of sitting in the gap below it.
-        <div className="pointer-events-none absolute inset-x-0 bottom-[5%] flex justify-center">
-          <div className="pointer-events-auto">{bottomSlot}</div>
-        </div>
-      ) : null}
     </div>
   );
 }

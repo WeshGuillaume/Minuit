@@ -104,7 +104,15 @@ export function TokenFooter({ report }: { report: GaugeReport }) {
     // so left-aligned (row mode) the row reads 10px indented against the
     // flush-left usage bar above it — the same pill-padding mismatch the tabs
     // have (see gauge-stack.tsx), fixed the same way: outdent the whole row.
-    <div className="flex items-center justify-center gap-1 [@container_panel_(max-height:260px)_and_(min-width:340px)]:-ml-2.5 [@container_panel_(max-height:260px)_and_(min-width:340px)]:justify-start">
+    //
+    // Shown only under the panel's two FULL-content reveal paths (portrait or
+    // row-capable) — NOT gauge-stack.tsx's narrow-but-tall "minimal" path,
+    // which shows only tabs and a bare usage bar, no room for a third row of
+    // stats. Querying the panel directly (not a "stack" width threshold)
+    // avoids an ambiguous overlap: stack width is panel width minus padding,
+    // so a merely-170px-wide portrait panel (full reveal) and a 165px-wide
+    // minimal one land at nearly the same stack width.
+    <div className="hidden items-center justify-center gap-1 [@container_panel_(min-width:170px)_and_(min-height:170px)]:flex [@container_panel_(min-width:340px)_and_(min-height:90px)]:flex [@container_panel_(max-height:260px)_and_(min-width:340px)]:-ml-2.5 [@container_panel_(max-height:260px)_and_(min-width:340px)]:justify-start">
       {stats(report).map(({ key, ...stat }) => (
         <FooterStat
           key={key}

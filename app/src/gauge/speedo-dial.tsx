@@ -2,21 +2,29 @@
 // ghost, the hovered-zone sweep, the center readout and the profitability badge.
 //
 // Responsiveness here is pure CSS: the dial establishes its own named container
-// ("dial", sized to itself) with three thresholds (index.css), each dropping
-// one more thing as the dial shrinks — decoration first, then the caption,
-// with the number itself the last to go:
+// ("dial", sized to itself) with four thresholds (index.css), each dropping
+// one more thing as the dial shrinks — decoration, then the caption, then the
+// zone name entirely, then interactivity. The number itself never hides; it
+// just keeps shrinking (see gauge-center.tsx's VALUE_CLASS) — there's no size
+// too small to show it.
 //   • --container-dial-decorated (190px) — below it, RadialGauge swaps to its
 //     coarse/wide tick ring and drops the scale labels, and the badge here
 //     hides too: decoration goes before the essentials.
 //   • --container-dial-captioned (130px) — below it, the zone caption under
-//     the pace number (gauge-center.tsx) hides; the number stays. Below it,
-//     the bottomSlot's arc-gap space (see below) takes over showing the zone
-//     name instead of leaving it blank — the arc doesn't sweep a full circle,
-//     so that space is already reserved, not claimed from the panel.
-//   • --container-dial-interactive (90px) — below it, the center readout
-//     hides and the tick hit target itself goes inert (an !important
-//     container-query override of its own inline pointer-events, in
-//     radial-gauge-tick.tsx) — genuinely non-interactive, not just quiet.
+//     the pace number (gauge-center.tsx) hides. Down to dial-labeled, the
+//     bottomSlot's arc-gap space (see below) takes over showing the zone name
+//     instead of leaving it blank — the arc doesn't sweep a full circle, so
+//     that space is already reserved, not claimed from the panel.
+//   • --container-dial-labeled (100px) — below it, the zone name in
+//     bottomSlot hides too, rather than risk it: some names ("Underfarming")
+//     are long enough to wrap onto a second line at the smallest dial sizes,
+//     colliding with the center number instead of sitting cleanly below it.
+//   • --container-dial-interactive (90px) — below it, the tick hit target
+//     goes inert (an !important container-query override of its own inline
+//     pointer-events, in radial-gauge-tick.tsx) — genuinely non-interactive,
+//     not just quiet. Hovering was already meaningless at this size (the
+//     wedges are too small to isolate a zone), so only the interaction goes,
+//     not the readout it would have shown.
 // The dial's own SIZE (how much of the panel it claims) is the caller's call —
 // see gauge-page.tsx, which differs it by orientation — this component only
 // owns its shape and its internal degradation. No JS measurement either way.
@@ -42,8 +50,10 @@ const SEGMENT_BY_ID = Object.fromEntries(
 ) as Record<ZoneId, Segment>;
 
 // Shape/behaviour invariants true regardless of how the caller sizes the dial;
-// the actual width formula is the caller's (see gauge-page.tsx).
-const DIAL_SHAPE = "aspect-square shrink-0";
+// the actual width formula is the caller's (see gauge-page.tsx). No aspect-*
+// here: RadialGauge now owns its own (slightly-shorter-than-square, cropped)
+// aspect ratio internally — a caller-supplied aspect-square would override it.
+const DIAL_SHAPE = "shrink-0";
 
 export function SpeedoDial({
   report,
@@ -105,33 +115,35 @@ export function SpeedoDial({
       compactTickLength={20}
       compactTickRadius={80}
       centerLabel={
-        // `contents` (rather than `block`/`flex`) drops the wrapper's own box
-        // once revealed, so the readout sits directly in RadialGauge's own
-        // centering flex column exactly as if this span weren't there.
-        <span className="hidden @dial-interactive/dial:contents">
-          {hoveredBound ? (
-            <RegionRange low={hoveredBound.low} high={hoveredBound.high} />
-          ) : (
-            <GaugeCenter report={report} onRefreshed={onRefreshed} />
-          )}
-        </span>
+        // Always shown — there's no size too small for the number itself, it
+        // just keeps stepping down (see gauge-center.tsx's VALUE_CLASS). Only
+        // the caption/decoration around it get dropped as the dial shrinks.
+        hoveredBound ? (
+          <RegionRange low={hoveredBound.low} high={hoveredBound.high} />
+        ) : (
+          <GaugeCenter report={report} onRefreshed={onRefreshed} />
+        )
       }
       bottomSlot={
         // The arc doesn't sweep a full circle — its open bottom is already
         // reserved space, not something to additionally claim from the panel.
-        // Above dial-decorated it's the $ badge; below dial-captioned the
-        // center's OWN caption (gauge-center.tsx) has already hidden, so the
-        // zone name moves down here instead of just leaving the gap empty.
-        // Between the two thresholds neither shows — the caption up top is
-        // still doing that job, and showing it twice would be redundant.
+        // Above dial-decorated it's the $ badge; between dial-labeled and
+        // dial-captioned the center's OWN caption (gauge-center.tsx) has
+        // already hidden, so the zone name moves down here instead of just
+        // leaving the gap empty. Below dial-labeled it hides too — some zone
+        // names ("Underfarming") are long enough to wrap onto a second line
+        // at the smallest dial sizes, colliding with the center number rather
+        // than sitting cleanly in the gap below it — better to drop it than
+        // let that happen. whitespace-nowrap is a second line of defence: if
+        // it's shown at all, clip rather than wrap.
         <>
           <span className="hidden @dial-decorated/dial:block">
             <ProfitabilityLight report={report} />
           </span>
-          <span className="block @dial-captioned/dial:hidden">
+          <span className="hidden @dial-labeled/dial:block @dial-captioned/dial:hidden">
             <ShimmerText
               text={SEGMENT_BY_ID[report.zone].label}
-              className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+              className="whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
             />
           </span>
         </>

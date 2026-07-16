@@ -6,8 +6,10 @@
 import type { GaugeReport, ToolId, WindowKey } from '@core/types'
 import { buildGauge } from '@core/report/build-gauge'
 import { buildRealInput } from '../adapters/build-input'
+import { demoReport } from './demo'
 
 export const loadReport = async (
   tool: ToolId,
   window: WindowKey,
-): Promise<GaugeReport> => buildGauge(await buildRealInput(tool, window))
+): Promise<GaugeReport> =>
+  demoReport(tool, window) ?? buildGauge(await buildRealInput(tool, window))

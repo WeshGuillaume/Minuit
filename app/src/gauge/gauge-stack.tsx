@@ -7,17 +7,23 @@
 //
 // Both establish a "stack" named container (the tabs' own icon/label swap and
 // the explainer's full/title/hidden swap query it for their own width/height),
-// and both reveal under the SAME two conditions, so the visible tabs are never
-// out of sync with the rest of the text:
+// and both reveal under the SAME three conditions, so the visible tabs are
+// never out of sync with the rest of the text:
 //   • portrait/square capable — width and height both clear 170px, enough for
 //     the normal column arrangement;
 //   • row capable — width clears 340px (the same floor gauge-page.tsx switches
 //     direction on) even if height is much shorter, since a row only needs a
-//     couple of compact lines, not a tall column.
-// Below both, there's no room for anything but the bare dial (gauge-page.tsx
-// lets it fill the space this frees up). Their alignment (centered vs
-// left-anchored) and grid placement follow the "panel" container's own row
-// condition — kept in lockstep with gauge-page.tsx's direction switch.
+//     couple of compact lines, not a tall column;
+//   • narrow-but-tall capable — width is below the portrait floor (no room for
+//     the full column) but height is generous, so at least tabs and a bare
+//     usage bar (no label row — see raw-usage-bar.tsx/token-footer.tsx, which
+//     hide their own text/rows below 170px of THIS container's own width) fit
+//     rather than going fully bare just because of a narrow width.
+// Below all three, there's no room for anything but the bare dial
+// (gauge-page.tsx lets it fill the space this frees up). Their alignment
+// (centered vs left-anchored) and grid placement follow the "panel"
+// container's own row condition — kept in lockstep with gauge-page.tsx's
+// direction switch.
 //
 // Tailwind needs each class as a static string literal (no JS-interpolated
 // breakpoints), so the conditions below are spelled out in full rather than
@@ -35,12 +41,16 @@
 import type { ReactNode } from "react";
 
 const REVEAL =
-  "[@container_panel_(min-width:170px)_and_(min-height:170px)]:flex [@container_panel_(min-width:340px)_and_(min-height:90px)]:flex";
+  "[@container_panel_(min-width:170px)_and_(min-height:170px)]:flex [@container_panel_(min-width:340px)_and_(min-height:90px)]:flex [@container_panel_(min-width:110px)_and_(min-height:130px)]:flex";
 
 export function GaugeTabsSlot({ children }: { children: ReactNode }) {
   return (
     <div
-      className={`@container/stack [container-type:inline-size] hidden col-start-1 row-start-1 w-full justify-center ${REVEAL} [@container_panel_(max-height:260px)_and_(min-width:340px)]:col-start-2 [@container_panel_(max-height:260px)_and_(min-width:340px)]:justify-start`}
+      // pointer-events-auto: the grid parent is pointer-events-none (so its
+      // own gaps stay draggable — see gauge-page.tsx), so each interactive
+      // child has to opt back in individually to keep its own content
+      // clickable.
+      className={`@container/stack [container-type:inline-size] pointer-events-auto hidden col-start-1 row-start-1 w-full justify-center ${REVEAL} [@container_panel_(max-height:260px)_and_(min-width:340px)]:col-start-2 [@container_panel_(max-height:260px)_and_(min-width:340px)]:justify-start`}
     >
       {/* The tab pill has its own chrome (a rounded p-0.5 wrapper plus each
           button's own px-2) — about 10px between the pill's edge and the
@@ -64,7 +74,7 @@ export function GaugeStack({ children }: { children: ReactNode }) {
       // slack evenly (a bit above, a bit below); anchoring it to one end
       // dumps all of it on the other, which read as "too much space" under
       // whichever child ends up last (the title, or the dial in row mode).
-      className={`@container/stack [container-type:size] hidden col-start-1 row-start-3 h-full w-full min-h-0 min-w-0 flex-col items-center justify-center gap-3 overflow-hidden ${REVEAL} [@container_panel_(max-height:260px)_and_(min-width:340px)]:col-start-2 [@container_panel_(max-height:260px)_and_(min-width:340px)]:row-start-2 [@container_panel_(max-height:260px)_and_(min-width:340px)]:items-start`}
+      className={`@container/stack [container-type:size] pointer-events-auto hidden col-start-1 row-start-3 h-full w-full min-h-0 min-w-0 flex-col items-center justify-center gap-3 overflow-hidden ${REVEAL} [@container_panel_(max-height:260px)_and_(min-width:340px)]:col-start-2 [@container_panel_(max-height:260px)_and_(min-width:340px)]:row-start-2 [@container_panel_(max-height:260px)_and_(min-width:340px)]:items-start`}
     >
       {children}
     </div>
