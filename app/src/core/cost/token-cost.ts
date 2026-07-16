@@ -8,7 +8,7 @@
 // Assumption/compromise: the caller has already resolved the model → ModelPrice.
 // Keeping resolution out of here makes the formula trivially testable per tier.
 
-import type { ModelPrice, TokenUsage } from '../types';
+import type { ModelPrice, TokenUsage } from "../types";
 
 const PER_MTOK = 1_000_000;
 

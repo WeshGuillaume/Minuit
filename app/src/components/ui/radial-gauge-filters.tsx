@@ -8,7 +8,7 @@ function TickFilters({
   glowIntensity: number;
 }) {
   return (
-    <defs>
+    <defs data-slot="radial-gauge-filters">
       <filter id={insetId} x="-20%" y="-20%" width="140%" height="140%">
         <feFlood floodColor="black" floodOpacity="0.55" />
         <feComposite operator="out" in2="SourceGraphic" result="inverse" />
@@ -21,11 +21,7 @@ function TickFilters({
         </feMerge>
       </filter>
       <filter id={glowId} x="-80%" y="-80%" width="260%" height="260%">
-        <feGaussianBlur
-          in="SourceGraphic"
-          stdDeviation={glowIntensity * 1.6}
-          result="blur"
-        />
+        <feGaussianBlur in="SourceGraphic" stdDeviation={glowIntensity * 1.6} result="blur" />
         <feComponentTransfer in="blur" result="blurFaded">
           <feFuncA type="linear" slope={glowIntensity} />
         </feComponentTransfer>

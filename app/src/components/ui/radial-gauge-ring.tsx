@@ -4,12 +4,7 @@
 // visible is pure CSS (see radial-gauge.tsx): both always mount, and the hidden
 // one's hit targets are automatically out of the hit-testing tree along with it.
 
-import {
-  GaugeTick,
-  type Tick,
-  type TickColor,
-  type TickActiveResolver,
-} from "./radial-gauge-tick";
+import { GaugeTick, type Tick, type TickActiveResolver, type TickColor } from "./radial-gauge-tick";
 
 interface TickRingProps {
   ticks: Tick[];
@@ -45,11 +40,9 @@ export function TickRing({
   className,
 }: TickRingProps) {
   return (
-    <g className={className} onMouseLeave={() => onHover?.(null)}>
+    <g data-slot="radial-gauge-ring" className={className} onMouseLeave={() => onHover?.(null)}>
       {ticks.map((tick) => {
-        const active = resolveActive
-          ? resolveActive(tick, tick.active)
-          : tick.active;
+        const active = resolveActive ? resolveActive(tick, tick.active) : tick.active;
         return (
           <GaugeTick
             key={tick.index}

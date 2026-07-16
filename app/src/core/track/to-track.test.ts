@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { toTrack } from './to-track';
-import { SEGMENTS } from './segments';
-import type { SegmentBound } from '../types';
+import { describe, expect, it } from "vitest";
+import type { SegmentBound } from "../types";
+import { SEGMENTS } from "./segments";
+import { toTrack } from "./to-track";
 
 // toTrack is axis-agnostic; we feed it synthetic monotonic cut points to test the
 // broken-axis mapping in isolation. These mimic the old heavy-user percent bounds:
@@ -11,8 +11,8 @@ const boundsFrom = (cuts: number[]): SegmentBound[] =>
   SEGMENTS.map((s, i) => ({ id: s.id, low: cuts[i], high: cuts[i + 1] }));
 const bounds = boundsFrom([0, 0.33, 0.73, 85, 100, 115, 130]);
 
-describe('toTrack', () => {
-  it('maps segment boundaries to their exact display offsets', () => {
+describe("toTrack", () => {
+  it("maps segment boundaries to their exact display offsets", () => {
     expect(toTrack(0, bounds)).toBe(0);
     expect(toTrack(0.33, bounds)).toBeCloseTo(13, 6); // end of underuse / start of profitable
     expect(toTrack(0.73, bounds)).toBeCloseTo(26, 6); // start of clear
@@ -22,12 +22,12 @@ describe('toTrack', () => {
     expect(toTrack(130, bounds)).toBeCloseTo(100, 6);
   });
 
-  it('places a mid-zone value proportionally WITHIN its display band', () => {
+  it("places a mid-zone value proportionally WITHIN its display band", () => {
     // 92.5 is halfway through warn [85,100] -> offset 70 + 0.5*10 = 75
     expect(toTrack(92.5, bounds)).toBeCloseTo(75, 6);
   });
 
-  it('is monotonic non-decreasing and never NaN across the range', () => {
+  it("is monotonic non-decreasing and never NaN across the range", () => {
     let prev = -1;
     for (let p = 0; p <= 130; p += 0.5) {
       const t = toTrack(p, bounds);
@@ -37,12 +37,12 @@ describe('toTrack', () => {
     }
   });
 
-  it('clamps out-of-range inputs', () => {
+  it("clamps out-of-range inputs", () => {
     expect(toTrack(-10, bounds)).toBe(0);
     expect(toTrack(999, bounds)).toBe(100);
   });
 
-  it('steps across a collapsed (empty) zone without NaN', () => {
+  it("steps across a collapsed (empty) zone without NaN", () => {
     const light = boundsFrom([0, 40, 92, 92, 100, 115, 130]); // clear is empty
     expect(Number.isNaN(toTrack(92, light))).toBe(false);
     expect(toTrack(91, light)).toBeLessThanOrEqual(toTrack(93, light));

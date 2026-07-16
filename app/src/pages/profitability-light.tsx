@@ -4,10 +4,10 @@
 // number, not a dial. Hovering it takes over the shared explainer with the state
 // and the raw dollars farmed.
 
-import { useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
 import type { GaugeReport } from "@core/types";
-import { useExplainerHover, type ExplainerContent } from "../gauge/explainer";
+import { AnimatePresence, motion } from "motion/react";
+import type { ExplainerContent } from "../components/gauge/explainer";
+import { useProfitabilityHover } from "./use-profitability-hover";
 
 const usd = (value: number) =>
   new Intl.NumberFormat("en-US", {
@@ -20,10 +20,7 @@ const usd = (value: number) =>
 const fmtRatio = (ratio: number): string =>
   `${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)}×`;
 
-const explain = (
-  report: GaugeReport,
-  profitable: boolean,
-): ExplainerContent => ({
+const explain = (report: GaugeReport, profitable: boolean): ExplainerContent => ({
   title: profitable ? "Anthropic in the green" : "Anthropic at a loss",
   description: `${usd(report.apiValue)} of API value, ${fmtRatio(report.ratio)} this window's sub cost`,
 });
@@ -32,22 +29,15 @@ const spring = { type: "spring", stiffness: 550, damping: 34 } as const;
 
 export function ProfitabilityLight({ report }: { report: GaugeReport }) {
   const profitable = report.ratio < report.breakEvenRatio;
-  const hover = useExplainerHover(explain(report, profitable));
-  const [over, setOver] = useState(false);
+  const { over, handleEnter, handleLeave } = useProfitabilityHover(explain(report, profitable));
 
   return (
     <span
       className={`relative flex cursor-default items-center justify-center rounded-full px-2.5 py-1 text-[11px] tabular-nums transition-colors ${
         over ? "text-foreground" : "text-muted-foreground"
       }`}
-      onMouseEnter={() => {
-        hover.onMouseEnter();
-        setOver(true);
-      }}
-      onMouseLeave={() => {
-        hover.onMouseLeave();
-        setOver(false);
-      }}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
     >
       <AnimatePresence>
         {over && (

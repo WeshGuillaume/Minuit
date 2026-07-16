@@ -2,9 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "enables the default permissions",
-  "windows": [
-    "main"
-  ],
+  "windows": ["main"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
@@ -14,36 +12,23 @@
     "process:default",
     {
       "identifier": "fs:allow-read-dir",
-      "allow": [
-        { "path": "$HOME/.claude" },
-        { "path": "$HOME/.claude/**" }
-      ]
+      "allow": [{ "path": "$HOME/.claude" }, { "path": "$HOME/.claude/**" }]
     },
     {
       "identifier": "fs:allow-read-text-file",
-      "allow": [
-        { "path": "$HOME/.claude/**" },
-        { "path": "$HOME/.cc-gauge/**" }
-      ]
+      "allow": [{ "path": "$HOME/.claude/**" }, { "path": "$HOME/.minuit/**" }]
     },
     {
       "identifier": "fs:allow-exists",
-      "allow": [
-        { "path": "$HOME/.cc-gauge" },
-        { "path": "$HOME/.cc-gauge/**" }
-      ]
+      "allow": [{ "path": "$HOME/.minuit" }, { "path": "$HOME/.minuit/**" }]
     },
     {
       "identifier": "fs:allow-write-text-file",
-      "allow": [
-        { "path": "$HOME/.cc-gauge/**" }
-      ]
+      "allow": [{ "path": "$HOME/.minuit/**" }]
     },
     {
       "identifier": "fs:allow-mkdir",
-      "allow": [
-        { "path": "$HOME/.cc-gauge" }
-      ]
+      "allow": [{ "path": "$HOME/.minuit" }]
     },
     {
       "identifier": "http:default",

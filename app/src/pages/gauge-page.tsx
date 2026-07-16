@@ -30,27 +30,27 @@
 // gauge-stack.tsx, speedo-dial.tsx) — nothing here measures or branches on
 // size in JS, it only places. All numbers come from the pure core via useReport.
 
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
-import type { GaugeReport, ToolId, WindowKey } from "@core/types";
 import { SEGMENTS } from "@core/track/segments";
+import type { GaugeReport, ToolId, WindowKey } from "@core/types";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { DemoPicker } from "../components/gauge/demo-picker";
 import {
-  ExplainerProvider,
-  ExplainerPanel,
   type ExplainerContent,
-} from "../gauge/explainer";
-import { useReport } from "../gauge/use-report";
-import { SignalRefresh } from "../gauge/signal-refresh";
-import { WindowSize } from "../gauge/window-size";
-import { WindowTabs } from "../gauge/window-tabs";
-import { TokenFooter } from "../gauge/token-footer";
-import { RawUsageBar } from "../gauge/raw-usage-bar";
-import { SpeedoDial } from "../gauge/speedo-dial";
-import { GaugeStack, GaugeTabsSlot } from "../gauge/gauge-stack";
-import { DemoPicker } from "../gauge/demo-picker";
+  ExplainerPanel,
+  ExplainerProvider,
+} from "../components/gauge/explainer";
+import { GaugeStack, GaugeTabsSlot } from "../components/gauge/gauge-stack";
+import { RawUsageBar } from "../components/gauge/raw-usage-bar";
+import { SignalRefresh } from "../components/gauge/signal-refresh";
+import { SpeedoDial } from "../components/gauge/speedo-dial";
+import { TokenFooter } from "../components/gauge/token-footer";
+import { useReport } from "../components/gauge/use-report";
+import { WindowSize } from "../components/gauge/window-size";
+import { WindowTabs } from "../components/gauge/window-tabs";
 
 const SEGMENT_BY_ID = Object.fromEntries(SEGMENTS.map((s) => [s.id, s]));
-const WINDOW_STORAGE_KEY = "cc-gauge:window";
+const WINDOW_STORAGE_KEY = "minuit:window";
 
 const loadWindow = (): WindowKey => {
   const saved = localStorage.getItem(WINDOW_STORAGE_KEY);
@@ -95,10 +95,7 @@ function GaugeLoading() {
     <div className="relative flex w-full flex-1 items-center justify-center text-muted-foreground">
       {/* No panel/tabs to react to yet — just keep the window grabbable while
           the first report loads. */}
-      <div
-        data-tauri-drag-region
-        className="absolute inset-0 cursor-grab active:cursor-grabbing"
-      />
+      <div data-tauri-drag-region className="absolute inset-0 cursor-grab active:cursor-grabbing" />
       <Loader2 className="pointer-events-none size-6 animate-spin" />
     </div>
   );
@@ -140,7 +137,7 @@ export function GaugeContent({
   };
 
   return (
-    <div className="relative flex flex-1 @container/panel overflow-hidden border-b bg-[#252525] drop-shadow-xl [container-type:size]">
+    <div className="relative flex flex-1 @container/panel overflow-hidden border-b bg-background drop-shadow-xl [container-type:size]">
       {/* The whole panel is the drag region, in every state — not just bare
           mode or a thin top strip. Negative z keeps it BELOW the grid's
           in-flow content in paint order (which also drives hit-testing), so

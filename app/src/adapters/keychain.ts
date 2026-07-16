@@ -6,11 +6,11 @@
 // `security` prints attributes on stdout, and the secret (with -w) on stdout too
 // but from a separate call. `add-generic-password -U` updates the existing item.
 
-import { Command } from '@tauri-apps/plugin-shell';
+import { Command } from "@tauri-apps/plugin-shell";
 
-const SERVICE = 'Claude Code-credentials';
+const SERVICE = "Claude Code-credentials";
 
-const security = (args: string[]) => Command.create('security', args).execute();
+const security = (args: string[]) => Command.create("security", args).execute();
 
 export interface KeychainItem {
   account: string;
@@ -18,22 +18,22 @@ export interface KeychainItem {
 }
 
 export const readKeychainItem = async (): Promise<KeychainItem | null> => {
-  const pw = await security(['find-generic-password', '-s', SERVICE, '-w']);
+  const pw = await security(["find-generic-password", "-s", SERVICE, "-w"]);
   if (pw.code !== 0 || !pw.stdout.trim()) return null;
-  const attrs = await security(['find-generic-password', '-s', SERVICE]);
-  const account = /"acct"<blob>="([^"]*)"/.exec(attrs.stdout)?.[1] ?? '';
+  const attrs = await security(["find-generic-password", "-s", SERVICE]);
+  const account = /"acct"<blob>="([^"]*)"/.exec(attrs.stdout)?.[1] ?? "";
   return { account, secret: pw.stdout.trim() };
 };
 
 export const writeKeychainItem = async (account: string, secret: string): Promise<boolean> => {
   const out = await security([
-    'add-generic-password',
-    '-U',
-    '-s',
+    "add-generic-password",
+    "-U",
+    "-s",
     SERVICE,
-    '-a',
+    "-a",
     account,
-    '-w',
+    "-w",
     secret,
   ]);
   return out.code === 0;

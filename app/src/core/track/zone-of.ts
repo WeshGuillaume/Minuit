@@ -8,11 +8,11 @@
 // skipped naturally because `value < high` can never hold for them. Anything
 // at/above the far bound is "over".
 
-import type { SegmentBound, ZoneId } from '../types';
+import type { SegmentBound, ZoneId } from "../types";
 
 export const zoneOf = (pct: number, bounds: SegmentBound[]): ZoneId => {
   for (const b of bounds) {
     if (pct < b.high) return b.id;
   }
-  return 'over';
+  return "over";
 };

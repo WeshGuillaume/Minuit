@@ -9,8 +9,8 @@
 // resolution is a private lookup here (not its own quantity): a model id that
 // matches no pattern falls back to the last family in pricing.match.
 
-import type { ModelPrice, Pricing, UsageEvent } from '../types';
-import { tokenCost } from './token-cost';
+import type { ModelPrice, Pricing, UsageEvent } from "../types";
+import { tokenCost } from "./token-cost";
 
 const priceForModel = (model: string, pricing: Pricing): ModelPrice => {
   const hit = pricing.match.find((m) => model.includes(m.pattern));

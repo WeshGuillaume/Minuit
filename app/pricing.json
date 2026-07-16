@@ -1,11 +1,30 @@
 {
-  "_comment": "EDIT THIS FILE when Anthropic changes API rates or plan prices. Rates are USD per 1,000,000 tokens. A per-user override can live at ~/.cc-gauge/pricing.json and takes precedence over this bundled copy.",
+  "_comment": "EDIT THIS FILE when Anthropic changes API rates or plan prices. Rates are USD per 1,000,000 tokens. A per-user override can live at ~/.minuit/pricing.json and takes precedence over this bundled copy.",
   "updated": "2026-07-15",
   "models": {
-    "opus": { "input": 15, "output": 75, "cacheRead": 1.5, "cacheWrite5m": 18.75, "cacheWrite1h": 30 },
-    "sonnet": { "input": 3, "output": 15, "cacheRead": 0.3, "cacheWrite5m": 3.75, "cacheWrite1h": 6 },
+    "opus": {
+      "input": 15,
+      "output": 75,
+      "cacheRead": 1.5,
+      "cacheWrite5m": 18.75,
+      "cacheWrite1h": 30
+    },
+    "sonnet": {
+      "input": 3,
+      "output": 15,
+      "cacheRead": 0.3,
+      "cacheWrite5m": 3.75,
+      "cacheWrite1h": 6
+    },
     "haiku": { "input": 1, "output": 5, "cacheRead": 0.1, "cacheWrite5m": 1.25, "cacheWrite1h": 2 },
-    "fable": { "_note": "Fable 5 pricing not published at build time — placeholder, update me.", "input": 5, "output": 25, "cacheRead": 0.5, "cacheWrite5m": 6.25, "cacheWrite1h": 10 }
+    "fable": {
+      "_note": "Fable 5 pricing not published at build time — placeholder, update me.",
+      "input": 5,
+      "output": 25,
+      "cacheRead": 0.5,
+      "cacheWrite5m": 6.25,
+      "cacheWrite1h": 10
+    }
   },
   "match": [
     { "pattern": "opus", "family": "opus" },

@@ -4,9 +4,9 @@
 // the token (the only path that could disturb a live `claude` session) is a
 // separate, opt-in concern that is intentionally not wired here.
 
-import { Command } from '@tauri-apps/plugin-shell';
-import { readTextFile } from '@tauri-apps/plugin-fs';
-import { claudePath } from './paths';
+import { readTextFile } from "@tauri-apps/plugin-fs";
+import { Command } from "@tauri-apps/plugin-shell";
+import { claudePath } from "./paths";
 
 export interface Credentials {
   accessToken: string;
@@ -24,17 +24,17 @@ const parse = (raw: string): Credentials | null => {
 };
 
 const fromKeychain = async (): Promise<Credentials | null> => {
-  const out = await Command.create('security', [
-    'find-generic-password',
-    '-s',
-    'Claude Code-credentials',
-    '-w',
+  const out = await Command.create("security", [
+    "find-generic-password",
+    "-s",
+    "Claude Code-credentials",
+    "-w",
   ]).execute();
   return out.code === 0 && out.stdout.trim() ? parse(out.stdout) : null;
 };
 
 const fromFile = async (): Promise<Credentials | null> =>
-  parse(await readTextFile(await claudePath('.credentials.json')));
+  parse(await readTextFile(await claudePath(".credentials.json")));
 
 export const readCredentials = async (): Promise<Credentials | null> => {
   try {

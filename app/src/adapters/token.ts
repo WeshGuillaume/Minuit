@@ -5,8 +5,8 @@
 // `refreshed` lets the caller bypass the usage cache, whose negative entry would
 // otherwise mask the just-refreshed token for the rest of its TTL.
 
-import { readCredentials, type Credentials } from './credentials';
-import { refreshCredentials } from './refresh';
+import { type Credentials, readCredentials } from "./credentials";
+import { refreshCredentials } from "./refresh";
 
 const REFRESH_COOLDOWN = 30_000;
 let lastAttempt = 0;
@@ -26,6 +26,6 @@ export const freshCredentials = async (): Promise<FreshCreds> => {
   }
 
   lastAttempt = Date.now();
-  if ((await refreshCredentials()) !== 'ok') return { creds, refreshed: false };
+  if ((await refreshCredentials()) !== "ok") return { creds, refreshed: false };
   return { creds: await readCredentials(), refreshed: true };
 };

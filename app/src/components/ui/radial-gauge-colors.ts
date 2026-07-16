@@ -26,4 +26,4 @@ function tickInactiveColor(fraction: number, deepVar: string): string {
   return `color-mix(in oklch, ${zoneColorForFraction(fraction)} 4%, ${deepVar})`;
 }
 
-export { zoneColorForFraction, tickActiveColor, tickInactiveColor };
+export { tickActiveColor, tickInactiveColor, zoneColorForFraction };

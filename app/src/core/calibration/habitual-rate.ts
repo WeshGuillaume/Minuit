@@ -8,7 +8,7 @@
 // wants your ordinary pace, neither optimistic nor pessimistic. Empty input →
 // 0, which the caller reads as "unknown pace" (hoursLeft → Infinity).
 
-import { percentile } from '../stats/percentile';
+import { percentile } from "../stats/percentile";
 
 export const habitualRate = (activeHourRates: number[]): number => {
   if (activeHourRates.length === 0) return 0;

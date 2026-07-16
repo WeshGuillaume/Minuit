@@ -1,4 +1,4 @@
-//! The persistent scan cache: `~/.cc-gauge/scan-cache.json`.
+//! The persistent scan cache: `~/.minuit/scan-cache.json`.
 //!
 //! Each entry is one transcript's parsed events, stamped with the mtime + size
 //! they were parsed at. On the next scan, a file whose mtime and size still match

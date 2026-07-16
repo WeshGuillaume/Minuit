@@ -6,14 +6,20 @@
 //      playground to sweep through the in-between sizes freely.
 //   2. ZONES — one full-size gauge per pace zone, to check the dial at each speed.
 
-import { useState, type ReactNode } from "react";
-import type { GaugeReport, PaceThresholds, WindowKey } from "@core/types";
 import { paceBounds } from "@core/pace/pace-bounds";
 import { zoneOf } from "@core/track/zone-of";
-import { ExplainerProvider } from "../gauge/explainer";
+import type { GaugeReport, PaceThresholds, WindowKey } from "@core/types";
+import { type ReactNode, useState } from "react";
+import { ExplainerProvider } from "../components/gauge/explainer";
 import { GaugeContent } from "./gauge-page";
 
-const THRESHOLDS: PaceThresholds = { underfarm: 0.5, slow: 0.85, fast: 1.15, redline: 1.5, blown: 2 };
+const THRESHOLDS: PaceThresholds = {
+  underfarm: 0.5,
+  slow: 0.85,
+  fast: 1.15,
+  redline: 1.5,
+  blown: 2,
+};
 const NOW = 1_700_000_000_000;
 
 const mock = (over: Partial<GaugeReport>): GaugeReport => {
@@ -66,7 +72,13 @@ function Frame({ report, width, height }: { report: GaugeReport; width: number; 
   return (
     <div style={{ width, height }} className="flex overflow-hidden rounded-lg ring-1 ring-white/10">
       <ExplainerProvider>
-        <GaugeContent report={report} refreshing={false} onRefreshed={() => {}} window={window} setWindow={setWindow} />
+        <GaugeContent
+          report={report}
+          refreshing={false}
+          onRefreshed={() => {}}
+          window={window}
+          setWindow={setWindow}
+        />
       </ExplainerProvider>
     </div>
   );
@@ -112,7 +124,13 @@ function Playground() {
         style={{ width: 330, height: 467, minWidth: 120, minHeight: 120 }}
       >
         <ExplainerProvider>
-          <GaugeContent report={MAXXING} refreshing={false} onRefreshed={() => {}} window={window} setWindow={setWindow} />
+          <GaugeContent
+            report={MAXXING}
+            refreshing={false}
+            onRefreshed={() => {}}
+            window={window}
+            setWindow={setWindow}
+          />
         </ExplainerProvider>
       </div>
     </div>
@@ -130,7 +148,9 @@ const ZONES: { label: string; report: GaugeReport }[] = [
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </h2>
       <div className="flex flex-wrap items-start gap-6">{children}</div>
     </section>
   );
@@ -140,7 +160,7 @@ export default function DesignSystem() {
   return (
     <main className="flex min-h-screen flex-col gap-10 p-6">
       <nav className="text-[13px]">
-        <a href="#/" className="text-[#66aaff] no-underline hover:underline">
+        <a href="#/" className="text-info no-underline hover:underline">
           ← Back to the gauge
         </a>
       </nav>
@@ -161,7 +181,9 @@ export default function DesignSystem() {
       <Section title="Zones">
         {ZONES.map((z) => (
           <div key={z.label} className="flex flex-col items-center gap-2">
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{z.label}</span>
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              {z.label}
+            </span>
             <Frame report={z.report} width={300} height={440} />
           </div>
         ))}

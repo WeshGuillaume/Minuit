@@ -1,7 +1,7 @@
 // buildGauge: the single pure entry point. It ORCHESTRATES the one-formula-per-
 // file quantities into a serializable GaugeReport and reimplements none of them.
-// `cc-gauge status --json` prints this object verbatim; the Tauri frontend
-// consumes it. It reads no disk, clock, or network; an adapter gathers the
+// The Tauri frontend consumes this object directly. It reads no disk, clock, or
+// network; an adapter gathers the
 // GaugeInput (see src/adapters/**) and injects `now`.
 //
 // Axis 2 is a SPEEDOMETER: pace = your rate ÷ the rate that lands you exactly at
@@ -10,20 +10,20 @@
 // ratio badge. The only arithmetic here is time WIRING (ms → hours), not a
 // domain formula.
 
-import type { GaugeInput, GaugeReport, UsageEvent } from '../types';
-import { windowApiValue } from '../cost/window-api-value';
-import { windowBreakdown } from '../tokens/window-breakdown';
-import { windowSubCost } from '../subscription/window-sub-cost';
-import { profitabilityRatio } from '../ratio/profitability-ratio';
-import { bindingWindow } from '../limits/binding-window';
-import { dollarsPerPct } from '../calibration/dollars-per-pct';
-import { habitualRate } from '../calibration/habitual-rate';
-import { sustainableRate } from '../pace/sustainable-rate';
-import { recentRate } from '../pace/recent-rate';
-import { paceValue } from '../pace/pace-value';
-import { paceBounds } from '../pace/pace-bounds';
-import { hoursLeft } from '../projection/hours-left';
-import { zoneOf } from '../track/zone-of';
+import { dollarsPerPct } from "../calibration/dollars-per-pct";
+import { habitualRate } from "../calibration/habitual-rate";
+import { windowApiValue } from "../cost/window-api-value";
+import { bindingWindow } from "../limits/binding-window";
+import { paceBounds } from "../pace/pace-bounds";
+import { paceValue } from "../pace/pace-value";
+import { recentRate } from "../pace/recent-rate";
+import { sustainableRate } from "../pace/sustainable-rate";
+import { hoursLeft } from "../projection/hours-left";
+import { profitabilityRatio } from "../ratio/profitability-ratio";
+import { windowSubCost } from "../subscription/window-sub-cost";
+import { windowBreakdown } from "../tokens/window-breakdown";
+import { zoneOf } from "../track/zone-of";
+import type { GaugeInput, GaugeReport, UsageEvent } from "../types";
 
 const H = 3_600_000; // ms per hour
 
@@ -72,7 +72,10 @@ export const buildGauge = (input: GaugeInput): GaugeReport => {
     pace: paceValue(recentPct, sustainablePct),
     habitualPace: paceValue(habitualPct, sustainablePct),
     paceThresholds: thresholds,
-    zone: livePct >= 100 ? 'over' : zoneOf(paceValue(recentPct, sustainablePct), paceBounds(thresholds)),
+    zone:
+      livePct >= 100
+        ? "over"
+        : zoneOf(paceValue(recentPct, sustainablePct), paceBounds(thresholds)),
     recentRatePct: recentPct,
     habitualRatePct: habitualPct,
     sustainableRatePct: sustainablePct,

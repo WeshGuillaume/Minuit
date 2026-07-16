@@ -4,11 +4,11 @@
 // browser-origin/CORS requests; this module only invokes it, then caches and
 // parses. Any failure returns null → "signal unavailable".
 
-import { invoke } from '@tauri-apps/api/core';
-import type { Credentials } from './credentials';
-import { readCache, readCacheEntry, writeCache } from './cache';
+import { invoke } from "@tauri-apps/api/core";
+import { readCache, readCacheEntry, writeCache } from "./cache";
+import type { Credentials } from "./credentials";
 
-const CACHE_FILE = 'usage-cache.json';
+const CACHE_FILE = "usage-cache.json";
 const CACHE_TTL = 180_000;
 
 /** Full outcome of one live call — the diagnostic surface behind `doctor`. */
@@ -27,10 +27,15 @@ interface RustProbe {
 
 export const probeUsage = async (creds: Credentials): Promise<UsageProbe> => {
   try {
-    const r = await invoke<RustProbe>('fetch_usage', { token: creds.accessToken });
+    const r = await invoke<RustProbe>("fetch_usage", { token: creds.accessToken });
     return { ok: r.ok, status: r.status, body: r.ok ? JSON.parse(r.body) : r.body, error: null };
   } catch (e) {
-    return { ok: false, status: null, body: null, error: e instanceof Error ? e.message : String(e) };
+    return {
+      ok: false,
+      status: null,
+      body: null,
+      error: e instanceof Error ? e.message : String(e),
+    };
   }
 };
 

@@ -5,18 +5,18 @@
 // on-disk cache, so a cold app start only re-parses the transcripts touched
 // since last run; `sinceMs` lets it skip files older than the lookback entirely.
 
-import { invoke } from '@tauri-apps/api/core';
-import type { UsageEvent } from '@core/types';
-import { claudePath, gaugePath } from './paths';
+import type { UsageEvent } from "@core/types";
+import { invoke } from "@tauri-apps/api/core";
+import { claudePath, gaugePath } from "./paths";
 
 const MEMO_TTL = 60_000;
 
 const scanFresh = async (sinceMs: number): Promise<UsageEvent[]> => {
   const [root, cachePath] = await Promise.all([
-    claudePath('projects'),
-    gaugePath('scan-cache.json'),
+    claudePath("projects"),
+    gaugePath("scan-cache.json"),
   ]);
-  return invoke<UsageEvent[]>('scan_events', { root, cachePath, sinceMs });
+  return invoke<UsageEvent[]>("scan_events", { root, cachePath, sinceMs });
 };
 
 // Keyed by `sinceMs` so callers wanting different horizons (the gauge's lookback

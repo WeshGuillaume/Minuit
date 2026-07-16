@@ -11,8 +11,8 @@
 // there is no live signal at all, $/% is 0 → rates 0 → the report degrades to
 // "insufficient" instead of inventing a rhythm.
 
-import type { GaugeInput, HourObservation, Pricing, RateConstraint, UsageEvent } from '@core/types';
-import { windowApiValue } from '@core/cost/window-api-value';
+import { windowApiValue } from "@core/cost/window-api-value";
+import type { GaugeInput, HourObservation, Pricing, RateConstraint, UsageEvent } from "@core/types";
 
 const H = 3_600_000;
 
@@ -39,7 +39,11 @@ const bucketByHour = (events: UsageEvent[], pricing: Pricing): HourBucket[] => {
 
 const observations = (buckets: HourBucket[], dollarsPerPct: number): HourObservation[] =>
   dollarsPerPct > 0
-    ? buckets.map((b) => ({ weekday: b.weekday, hour: b.hour, ratePctPerHour: b.usd / dollarsPerPct }))
+    ? buckets.map((b) => ({
+        weekday: b.weekday,
+        hour: b.hour,
+        ratePctPerHour: b.usd / dollarsPerPct,
+      }))
     : [];
 
 export const buildCalibration = (
@@ -47,7 +51,7 @@ export const buildCalibration = (
   lookbackEvents: UsageEvent[],
   pricing: Pricing,
   constraint: RateConstraint | null,
-): GaugeInput['calibration'] => {
+): GaugeInput["calibration"] => {
   const pctConsumed = constraint?.usedPercent ?? 0;
   const apiValue = windowApiValue(windowEvents, pricing);
   const dollarsPerPct = pctConsumed > 0 ? apiValue / pctConsumed : 0;

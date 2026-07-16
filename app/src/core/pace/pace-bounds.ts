@@ -12,8 +12,8 @@
 // also forces `over` when the cap is literally hit (currentPct ≥ 100). Beyond
 // MAX the track just clamps to its far edge (see toTrack).
 
-import type { PaceThresholds, SegmentBound } from '../types';
-import { SEGMENTS } from '../track/segments';
+import { SEGMENTS } from "../track/segments";
+import type { PaceThresholds, SegmentBound } from "../types";
 
 /** Right edge of the drawn pace track, a bit past "blown" so the needle has room. */
 export const PACE_DISPLAY_MAX = 2.5;

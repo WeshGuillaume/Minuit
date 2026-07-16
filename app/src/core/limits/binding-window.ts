@@ -9,7 +9,7 @@
 // Returns null for an empty list (signal unavailable / no constraints), which
 // the report surfaces as signalAvailable = false rather than a fake 0%.
 
-import type { RateConstraint } from '../types';
+import type { RateConstraint } from "../types";
 
 export const bindingWindow = (constraints: RateConstraint[]): RateConstraint | null =>
   constraints.reduce<RateConstraint | null>(

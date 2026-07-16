@@ -1,11 +1,13 @@
-// OTA update via le plugin Tauri updater. `check()` interroge le latest.json des
-// GitHub Releases ; si une version signée existe, elle est téléchargée, installée
-// et relancée automatiquement, sans action utilisateur. En dev / hors Tauri,
-// `check()` échoue → phase "none" (silencieux).
+/*
+ * OTA update via the Tauri updater plugin. `check()` queries the GitHub
+ * Releases latest.json; if a signed version exists, it's downloaded,
+ * installed, and relaunched automatically, with no user action. In dev / outside
+ * Tauri, `check()` fails silently → phase "none".
+ */
 
-import { useEffect, useState } from "react";
-import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
+import { check } from "@tauri-apps/plugin-updater";
+import { useEffect, useState } from "react";
 
 export type UpdaterState =
   | { phase: "checking" }

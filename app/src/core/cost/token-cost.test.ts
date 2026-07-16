@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { tokenCost } from './token-cost';
-import type { ModelPrice, TokenUsage } from '../types';
+import { describe, expect, it } from "vitest";
+import type { ModelPrice, TokenUsage } from "../types";
+import { tokenCost } from "./token-cost";
 
 // Opus-like rates (USD / million tokens), deliberately distinct per tier.
 const price: ModelPrice = {
@@ -13,14 +13,14 @@ const price: ModelPrice = {
 
 const zero: TokenUsage = { input: 0, output: 0, cacheRead: 0, cacheWrite5m: 0, cacheWrite1h: 0 };
 
-describe('tokenCost', () => {
-  it('prices each tier independently', () => {
+describe("tokenCost", () => {
+  it("prices each tier independently", () => {
     expect(tokenCost({ ...zero, input: 1_000_000 }, price)).toBeCloseTo(15, 10);
     expect(tokenCost({ ...zero, output: 1_000_000 }, price)).toBeCloseTo(75, 10);
     expect(tokenCost({ ...zero, cacheRead: 1_000_000 }, price)).toBeCloseTo(1.5, 10);
   });
 
-  it('distinguishes 5-minute from 1-hour cache writes (different rates)', () => {
+  it("distinguishes 5-minute from 1-hour cache writes (different rates)", () => {
     const w5 = tokenCost({ ...zero, cacheWrite5m: 1_000_000 }, price);
     const w1 = tokenCost({ ...zero, cacheWrite1h: 1_000_000 }, price);
     expect(w5).toBeCloseTo(18.75, 10);
@@ -28,7 +28,7 @@ describe('tokenCost', () => {
     expect(w5).not.toBeCloseTo(w1, 5);
   });
 
-  it('sums all five tiers', () => {
+  it("sums all five tiers", () => {
     const usage: TokenUsage = {
       input: 200_000,
       output: 50_000,
@@ -41,7 +41,7 @@ describe('tokenCost', () => {
     expect(tokenCost(usage, price)).toBeCloseTo(10.725, 10);
   });
 
-  it('is zero for no tokens', () => {
+  it("is zero for no tokens", () => {
     expect(tokenCost(zero, price)).toBe(0);
   });
 });

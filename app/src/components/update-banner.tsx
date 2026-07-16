@@ -1,6 +1,8 @@
-// Overlay de mise à jour : plein écran, bloquant, sans possibilité de le fermer.
-// Dès qu'une version est détectée, le téléchargement + l'installation démarrent
-// automatiquement (voir useUpdater) ; cet écran ne fait qu'en montrer l'avancement.
+/*
+ * Update overlay: full-screen, blocking, no way to dismiss it. As soon as a
+ * version is detected, the download + install starts automatically (see
+ * useUpdater) — this screen only shows its progress.
+ */
 
 import { Loader2 } from "lucide-react";
 import { useUpdater } from "@/lib/updater";
@@ -12,7 +14,9 @@ export function UpdateBanner() {
     return (
       <Overlay>
         <Loader2 className="size-6 animate-spin text-primary" />
-        <span className="text-sm">Mise à jour {state.version}… {Math.round(state.percent * 100)}%</span>
+        <span className="text-sm">
+          Updating to {state.version}… {Math.round(state.percent * 100)}%
+        </span>
       </Overlay>
     );
   }
@@ -21,7 +25,7 @@ export function UpdateBanner() {
     return (
       <Overlay>
         <Loader2 className="size-6 animate-spin text-primary" />
-        <span className="text-sm">Redémarrage…</span>
+        <span className="text-sm">Restarting…</span>
       </Overlay>
     );
   }

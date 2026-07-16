@@ -28,7 +28,7 @@ use walk::FileMeta;
 /// since the lookback horizon.
 ///
 /// - `root`       absolute path to `~/.claude/projects`
-/// - `cache_path` absolute path to `~/.cc-gauge/scan-cache.json`
+/// - `cache_path` absolute path to `~/.minuit/scan-cache.json`
 /// - `since_ms`   epoch-ms lookback floor; files untouched since then are ignored
 ///                (their events all predate the window, so they can't matter)
 pub fn run(root: &str, cache_path: &str, since_ms: i64) -> Vec<UsageEvent> {

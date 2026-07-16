@@ -1,8 +1,8 @@
-// Shared domain types for cc-gauge. Pure data — zero runtime logic, zero I/O.
+// Shared domain types for Minuit. Pure data — zero runtime logic, zero I/O.
 //
-// These types are the lingua franca between three layers that never import each
-// other's internals: the calculation core (src/core/**), the I/O adapters
-// (src/adapters/**), and the presentation front-ends (CLI + future Tauri app).
+// These types are the lingua franca between two layers that never import each
+// other's internals: the calculation core (src/core/**) and the I/O adapters
+// (src/adapters/**), consumed by the Tauri frontend (src/components/**, src/pages/**).
 //
 // Multi-tool by construction: a `ToolId` only ever tells an *adapter* which
 // provider's files/endpoints to read. The calculation core never branches on it
@@ -15,10 +15,10 @@
  * the others are reserved so the UI's Tool <select> and the adapter registry
  * can grow without reaching into the calculation core.
  */
-export type ToolId = 'claude' | 'codex' | 'gemini' | 'copilot';
+export type ToolId = "claude" | "codex" | "gemini" | "copilot";
 
 /** The two rate-limit windows Anthropic exposes on the usage signal. */
-export type WindowKey = 'five_hour' | 'seven_day';
+export type WindowKey = "five_hour" | "seven_day";
 
 export interface WindowDef {
   key: WindowKey;
@@ -27,7 +27,7 @@ export interface WindowDef {
 }
 
 /** The six graduated states of the track, in track order. */
-export type ZoneId = 'underuse' | 'profitable' | 'clear' | 'warn' | 'noreturn' | 'over';
+export type ZoneId = "underuse" | "profitable" | "clear" | "warn" | "noreturn" | "over";
 
 /**
  * A raw token breakdown for a single priced turn. Each tier is billed at a
@@ -166,8 +166,8 @@ export interface GaugeInput {
 }
 
 /**
- * The pure result of buildGauge — exactly what `cc-gauge status --json` prints
- * and what the Tauri frontend consumes. No rendering notions live here.
+ * The pure result of buildGauge — exactly what the Tauri frontend consumes.
+ * No rendering notions live here.
  */
 export interface GaugeReport {
   tool: ToolId;

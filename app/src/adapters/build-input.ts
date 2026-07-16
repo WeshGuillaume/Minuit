@@ -4,15 +4,15 @@
 // source degrades independently — no token, no network, or a schema drift leaves
 // `constraints` empty and the report simply reports "signal unavailable".
 
-import type { GaugeInput, ToolId, WindowKey } from '@core/types';
-import { bindingWindow } from '@core/limits/binding-window';
-import { scanAllEvents } from './scan';
-import type { Credentials } from './credentials';
-import { freshCredentials } from './token';
-import { fetchUsageMeta, probeAndCache, type UsageWithMeta } from './usage-api';
-import { parseUsage, windowKeyOf } from './usage-parse';
-import { loadPricing } from './pricing';
-import { buildCalibration } from './calibration';
+import { bindingWindow } from "@core/limits/binding-window";
+import type { GaugeInput, ToolId, WindowKey } from "@core/types";
+import { buildCalibration } from "./calibration";
+import type { Credentials } from "./credentials";
+import { loadPricing } from "./pricing";
+import { scanAllEvents } from "./scan";
+import { freshCredentials } from "./token";
+import { fetchUsageMeta, probeAndCache, type UsageWithMeta } from "./usage-api";
+import { parseUsage, windowKeyOf } from "./usage-parse";
 
 const WINDOW_SECONDS: Record<WindowKey, number> = {
   five_hour: 5 * 3_600,
@@ -20,9 +20,9 @@ const WINDOW_SECONDS: Record<WindowKey, number> = {
 };
 
 const PLAN_LABELS: Record<string, string> = {
-  pro: 'Pro',
-  max5x: 'Max 5×',
-  max20x: 'Max 20×',
+  pro: "Pro",
+  max5x: "Max 5×",
+  max20x: "Max 20×",
 };
 
 // A just-refreshed token bypasses the cache so a stale negative (401) entry

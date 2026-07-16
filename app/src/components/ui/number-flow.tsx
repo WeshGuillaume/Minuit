@@ -39,5 +39,9 @@ export function NumberFlow({
     el.update(value);
   }, [value, suffix, prefix, format]);
 
-  return React.createElement("number-flow", { ref, className });
+  return React.createElement("number-flow", {
+    ref,
+    className,
+    "data-slot": "number-flow",
+  });
 }

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { windowApiValue } from './window-api-value';
-import type { Pricing, UsageEvent } from '../types';
+import { describe, expect, it } from "vitest";
+import type { Pricing, UsageEvent } from "../types";
+import { windowApiValue } from "./window-api-value";
 
 const pricing = {
   models: {
@@ -8,8 +8,8 @@ const pricing = {
     sonnet: { input: 3, output: 15, cacheRead: 0.3, cacheWrite5m: 3.75, cacheWrite1h: 6 },
   },
   match: [
-    { pattern: 'opus', family: 'opus' },
-    { pattern: 'sonnet', family: 'sonnet' },
+    { pattern: "opus", family: "opus" },
+    { pattern: "sonnet", family: "sonnet" },
   ],
 } as unknown as Pricing;
 
@@ -25,21 +25,21 @@ const ev = (model: string, over: Partial<UsageEvent>): UsageEvent => ({
   ...over,
 });
 
-describe('windowApiValue', () => {
-  it('prices a mixed-model window by resolving each event to its family', () => {
+describe("windowApiValue", () => {
+  it("prices a mixed-model window by resolving each event to its family", () => {
     const events = [
-      ev('claude-opus-4-8', { output: 1_000_000 }), // 75
-      ev('claude-sonnet-5', { input: 1_000_000 }), // 3
+      ev("claude-opus-4-8", { output: 1_000_000 }), // 75
+      ev("claude-sonnet-5", { input: 1_000_000 }), // 3
     ];
     expect(windowApiValue(events, pricing)).toBeCloseTo(78, 10);
   });
 
-  it('falls back to the last family for an unknown model id', () => {
+  it("falls back to the last family for an unknown model id", () => {
     // 'sonnet' is last in match -> unknown model priced as sonnet
-    expect(windowApiValue([ev('mystery-model', { input: 1_000_000 })], pricing)).toBeCloseTo(3, 10);
+    expect(windowApiValue([ev("mystery-model", { input: 1_000_000 })], pricing)).toBeCloseTo(3, 10);
   });
 
-  it('is zero for an empty window', () => {
+  it("is zero for an empty window", () => {
     expect(windowApiValue([], pricing)).toBe(0);
   });
 });

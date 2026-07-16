@@ -2,9 +2,9 @@
 // page for developing/showcasing components. New pages = one more branch here.
 
 import { useEffect, useState } from "react";
-import GaugePage from "./pages/gauge-page";
-import DesignSystem from "./pages/design-system";
 import { UpdateBanner } from "./components/update-banner";
+import DesignSystem from "./pages/design-system";
+import GaugePage from "./pages/gauge-page";
 
 const useHashRoute = (): string => {
   const [hash, setHash] = useState(window.location.hash);

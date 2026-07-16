@@ -1,18 +1,10 @@
 import * as React from "react";
-
-import { cn } from "@/lib/utils";
 import { NumberFlow } from "@/components/ui/number-flow";
-import {
-  tickActiveColor,
-  tickInactiveColor,
-} from "@/components/ui/radial-gauge-colors";
+import { tickActiveColor, tickInactiveColor } from "@/components/ui/radial-gauge-colors";
 import { TickFilters } from "@/components/ui/radial-gauge-filters";
-import type {
-  Tick,
-  TickColor,
-  TickActiveResolver,
-} from "@/components/ui/radial-gauge-tick";
 import { TickRing } from "@/components/ui/radial-gauge-ring";
+import type { Tick, TickActiveResolver, TickColor } from "@/components/ui/radial-gauge-tick";
+import { cn } from "@/lib/utils";
 
 interface RadialGaugeProps extends React.ComponentProps<"div"> {
   value: number;
@@ -72,6 +64,49 @@ function polarToCartesian(radius: number, angleDeg: number) {
     x: CENTER + radius * Math.cos(rad),
     y: CENTER + radius * Math.sin(rad),
   };
+}
+
+/** A hollow ring marker on the arc, at `fraction` (0..1) of the sweep. */
+function GhostMarker({
+  fraction,
+  startAngle,
+  sweepAngle,
+  tickRadius,
+  compactTickRadius,
+}: {
+  fraction: number;
+  startAngle: number;
+  sweepAngle: number;
+  tickRadius: number;
+  compactTickRadius: number;
+}) {
+  const angle = startAngle + Math.min(1, Math.max(0, fraction)) * sweepAngle;
+  // Two markers, not one: the ghost sits just past the tick radius, and that
+  // radius differs between the fine and coarse rings (see compactTickRadius
+  // above) — anchoring to the fine ring's radius alone left it floating
+  // outside the coarse ring once the dial shrank far enough to swap rings.
+  const fine = polarToCartesian(tickRadius + 5, angle);
+  const compact = polarToCartesian(compactTickRadius + 5, angle);
+  return (
+    <g data-slot="radial-gauge-ghost">
+      <circle
+        cx={fine.x}
+        cy={fine.y}
+        r={2.6}
+        className={`fill-none stroke-muted-foreground ${DECORATED_HIDDEN}`}
+        strokeWidth={1.4}
+        opacity={0.75}
+      />
+      <circle
+        cx={compact.x}
+        cy={compact.y}
+        r={2.6}
+        className={`fill-none stroke-muted-foreground ${DECORATED_ONLY}`}
+        strokeWidth={1.4}
+        opacity={0.75}
+      />
+    </g>
+  );
 }
 
 function buildTicks(
@@ -142,14 +177,7 @@ function RadialGauge({
   const step = sweepAngle / (tickCount - 1);
   const compactStep = sweepAngle / (compactTickCount - 1);
 
-  const ticks = buildTicks(
-    tickCount,
-    startAngle,
-    sweepAngle,
-    tickRadius,
-    tickLength,
-    activeAngle,
-  );
+  const ticks = buildTicks(tickCount, startAngle, sweepAngle, tickRadius, tickLength, activeAngle);
   const compactTicks = buildTicks(
     compactTickCount,
     startAngle,
@@ -193,10 +221,7 @@ function RadialGauge({
     // dial's OWN box being sized, so it can't query itself).
     <div
       data-slot="radial-gauge"
-      className={cn(
-        "relative aspect-[1/0.95] w-full max-w-60 -mb-12 overflow-hidden",
-        className,
-      )}
+      className={cn("relative aspect-[1/0.95] w-full max-w-60 -mb-12 overflow-hidden", className)}
       {...props}
     >
       <div className="absolute inset-x-0 top-0 flex aspect-square w-full items-center justify-center">
@@ -206,11 +231,7 @@ function RadialGauge({
           role="img"
           aria-label={formatLabel(clamped)}
         >
-          <TickFilters
-            insetId={insetId}
-            glowId={glowId}
-            glowIntensity={glowIntensity}
-          />
+          <TickFilters insetId={insetId} glowId={glowId} glowIntensity={glowIntensity} />
           <TickRing
             {...ring}
             ticks={ticks}
@@ -229,39 +250,15 @@ function RadialGauge({
             tickLength={compactTickLength}
             className={DECORATED_ONLY}
           />
-          {ghostFraction != null &&
-            (() => {
-              // Two markers, not one: the ghost sits just past the tick
-              // radius, and that radius differs between the fine and coarse
-              // rings (see compactTickRadius above) — anchoring to the fine
-              // ring's radius alone left it floating outside the coarse ring
-              // once the dial shrank far enough to swap rings.
-              const angle =
-                startAngle +
-                Math.min(1, Math.max(0, ghostFraction)) * sweepAngle;
-              const fine = polarToCartesian(tickRadius + 5, angle);
-              const compact = polarToCartesian(compactTickRadius + 5, angle);
-              return (
-                <>
-                  <circle
-                    cx={fine.x}
-                    cy={fine.y}
-                    r={2.6}
-                    className={`fill-none stroke-muted-foreground ${DECORATED_HIDDEN}`}
-                    strokeWidth={1.4}
-                    opacity={0.75}
-                  />
-                  <circle
-                    cx={compact.x}
-                    cy={compact.y}
-                    r={2.6}
-                    className={`fill-none stroke-muted-foreground ${DECORATED_ONLY}`}
-                    strokeWidth={1.4}
-                    opacity={0.75}
-                  />
-                </>
-              );
-            })()}
+          {ghostFraction != null && (
+            <GhostMarker
+              fraction={ghostFraction}
+              startAngle={startAngle}
+              sweepAngle={sweepAngle}
+              tickRadius={tickRadius}
+              compactTickRadius={compactTickRadius}
+            />
+          )}
           {labels.map((label) => (
             <text
               key={label.value}
@@ -278,21 +275,18 @@ function RadialGauge({
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-lg font-normal text-foreground">
-            {centerLabel ?? (
-              <NumberFlow value={Math.round(clamped)} suffix={centerSuffix} />
-            )}
+            {centerLabel ?? <NumberFlow value={Math.round(clamped)} suffix={centerSuffix} />}
           </span>
-          {children ? (
-            <div className="pointer-events-auto mt-1">{children}</div>
-          ) : null}
+          {children ? <div className="pointer-events-auto mt-1">{children}</div> : null}
         </div>
         {bottomSlot ? (
-          // bottom-0, not -bottom-1: hanging a px or two past the inner
-          // square's own edge was harmless when nothing clipped it, but the
-          // OUTER crop above now does — sitting flush with the inner square's
-          // bottom instead keeps it inside both the crop and the inner
-          // square, at any dial size.
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center">
+          // bottom-[5%], not bottom-0: the inner square is taller than the
+          // OUTER box (aspect-[1/0.95] crops 5% off the bottom), so the
+          // inner square's own bottom edge sits past the crop line — a
+          // badge pinned there gets its bottom sliced off. Anchoring 5% up
+          // from the inner square's bottom instead lands it exactly on the
+          // crop line, keeping the whole badge visible at any dial size.
+          <div className="pointer-events-none absolute inset-x-0 bottom-[5%] flex justify-center">
             <div className="pointer-events-auto">{bottomSlot}</div>
           </div>
         ) : null}

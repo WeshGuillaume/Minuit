@@ -12,8 +12,8 @@
 // is legible at a glance. Exact figures live in the stats beside the track. The
 // mapping is monotonic non-decreasing and never returns NaN.
 
-import type { SegmentBound } from '../types';
-import { SEGMENTS, SEGMENT_OFFSETS } from './segments';
+import type { SegmentBound } from "../types";
+import { SEGMENT_OFFSETS, SEGMENTS } from "./segments";
 
 export const toTrack = (pct: number, bounds: SegmentBound[]): number => {
   if (pct <= bounds[0].low) return 0;

@@ -4,8 +4,8 @@
 // `get_config` command. Size / always-on-top / Dock / traffic lights are
 // applied natively at startup instead — see src-tauri/src/window.rs.
 
-import { invoke } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 interface RuntimeConfig {
   closeOnEsc: boolean;
@@ -13,12 +13,12 @@ interface RuntimeConfig {
 }
 
 export const installWindowBehavior = async (): Promise<void> => {
-  const cfg = await invoke<RuntimeConfig>('get_config');
+  const cfg = await invoke<RuntimeConfig>("get_config");
   const win = getCurrentWindow();
 
   if (cfg.closeOnEsc) {
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') void win.hide();
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") void win.hide();
     });
   }
 

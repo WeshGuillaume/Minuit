@@ -26,8 +26,7 @@ const SAMPLE_ADS = [
 
 // Rotate by day so a given dev session sees a stable ad, not a flicker on every
 // render. (No Math.random — keeps the render deterministic.)
-const pickAd = () =>
-  SAMPLE_ADS[Math.floor(Date.now() / 86_400_000) % SAMPLE_ADS.length];
+const pickAd = () => SAMPLE_ADS[Math.floor(Date.now() / 86_400_000) % SAMPLE_ADS.length];
 
 export function AdBanner() {
   if (!import.meta.env.DEV) return null;
@@ -44,10 +43,7 @@ export function AdBanner() {
         rel="noreferrer sponsored"
         className="hover:text-foreground transition-colors"
       >
-        {ad.body}{" "}
-        <span className="text-foreground/80 underline underline-offset-2">
-          {ad.cta}
-        </span>
+        {ad.body} <span className="text-foreground/80 underline underline-offset-2">{ad.cta}</span>
       </a>{" "}
       <span className="text-[9px] uppercase tracking-wide text-muted-foreground/60">
         Ads by EthicalAds

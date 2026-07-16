@@ -76,7 +76,7 @@ function GaugeTick({
   const y = midY - length / 2;
   const bar = { x, y, width: tickWidth, height: length, rx: tickWidth / 2 };
   return (
-    <g>
+    <g data-slot="radial-gauge-tick">
       {/* Inner group rotates the socket + fill radially; the fill scales within it. */}
       <g transform={`rotate(${tick.angle}, ${midX}, ${midY})`}>
         <rect

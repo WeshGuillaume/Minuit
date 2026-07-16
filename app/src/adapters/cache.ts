@@ -1,9 +1,9 @@
-// Tiny TTL'd JSON cache under `~/.cc-gauge`. Used to throttle the unofficial
+// Tiny TTL'd JSON cache under `~/.minuit`. Used to throttle the unofficial
 // usage endpoint (which 429s aggressively) to one call per few minutes. Both
 // read and write are best-effort: a missing/corrupt/stale entry just misses.
 
-import { readTextFile, writeTextFile, mkdir, exists } from '@tauri-apps/plugin-fs';
-import { gaugePath } from './paths';
+import { exists, mkdir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { gaugePath } from "./paths";
 
 interface Entry<T> {
   at: number; // ms epoch when written

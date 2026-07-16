@@ -13,8 +13,8 @@
 // small-denominator blow-up. When the sample is empty (new user) we fall back
 // to the instant reading and flag calibrated=false so the UI can say so.
 
-import type { WindowSample } from '../types';
-import { percentile } from '../stats/percentile';
+import { percentile } from "../stats/percentile";
+import type { WindowSample } from "../types";
 
 export interface DollarsPerPct {
   value: number;
@@ -28,7 +28,13 @@ export const dollarsPerPct = (
 ): DollarsPerPct => {
   const usable = samples.filter((s) => s.pctConsumed >= floorPct);
   if (usable.length > 0) {
-    return { value: percentile(usable.map((s) => s.apiValue / s.pctConsumed), 50), calibrated: true };
+    return {
+      value: percentile(
+        usable.map((s) => s.apiValue / s.pctConsumed),
+        50,
+      ),
+      calibrated: true,
+    };
   }
   const value = instant.pctConsumed > 0 ? instant.apiValue / instant.pctConsumed : 0;
   return { value, calibrated: false };

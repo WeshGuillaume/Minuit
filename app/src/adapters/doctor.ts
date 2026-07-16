@@ -2,16 +2,16 @@
 // where it stops. Mirrors the CLI's `doctor` command. Attached to `window` in
 // dev (see main.tsx) so `await ccgaugeDoctor()` can be run from the console.
 
-import { readCredentials } from './credentials';
-import { probeUsage } from './usage-api';
-import { parseUsage } from './usage-parse';
-import { scanAllEvents } from './scan';
+import { readCredentials } from "./credentials";
+import { scanAllEvents } from "./scan";
+import { probeUsage } from "./usage-api";
+import { parseUsage } from "./usage-parse";
 
 export interface Diagnosis {
   events: number; // local turns found (Axis 1 source)
-  credentials: 'ok' | 'missing';
+  credentials: "ok" | "missing";
   tokenExpiresIn: string; // human hint, or 'expired' / 'n/a'
-  usage: 'ok' | 'unreachable';
+  usage: "ok" | "unreachable";
   usageStatus: number | null; // HTTP status of the live call (null = threw)
   usageError: string | null; // thrown message when the call didn't complete
   constraints: number; // rate-limit windows parsed from the signal
@@ -19,9 +19,9 @@ export interface Diagnosis {
 }
 
 const expiryHint = (expiresAt: number): string => {
-  if (!expiresAt) return 'n/a';
+  if (!expiresAt) return "n/a";
   const ms = expiresAt - Date.now();
-  return ms <= 0 ? 'expired' : `${Math.round(ms / 3_600_000)}h`;
+  return ms <= 0 ? "expired" : `${Math.round(ms / 3_600_000)}h`;
 };
 
 export const doctor = async (): Promise<Diagnosis> => {
@@ -29,16 +29,22 @@ export const doctor = async (): Promise<Diagnosis> => {
   const creds = await readCredentials();
   if (!creds) {
     return {
-      events, credentials: 'missing', tokenExpiresIn: 'n/a',
-      usage: 'unreachable', usageStatus: null, usageError: null, constraints: 0, raw: null,
+      events,
+      credentials: "missing",
+      tokenExpiresIn: "n/a",
+      usage: "unreachable",
+      usageStatus: null,
+      usageError: null,
+      constraints: 0,
+      raw: null,
     };
   }
   const probe = await probeUsage(creds);
   return {
     events,
-    credentials: 'ok',
+    credentials: "ok",
     tokenExpiresIn: expiryHint(creds.expiresAt),
-    usage: probe.ok ? 'ok' : 'unreachable',
+    usage: probe.ok ? "ok" : "unreachable",
     usageStatus: probe.status,
     usageError: probe.error,
     constraints: probe.ok ? parseUsage(probe.body, Date.now()).length : 0,
