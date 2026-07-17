@@ -40,7 +40,7 @@ describe("windowBreakdown", () => {
       ev({ timestamp: H, input: 750 }),
     ]);
     expect(b.total).toBe(11_350); // includes cacheRead
-    expect(b.perHour).toBe(675); // (1350 fresh) / 2 active hours — cacheRead excluded
+    expect(b.perHour).toBe(675); // (1350 fresh) / 2 active hours, cacheRead excluded
   });
 
   it("counts cache CREATION as a miss, not a hit, in the denominator", () => {

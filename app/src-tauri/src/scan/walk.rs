@@ -16,7 +16,7 @@ pub struct FileMeta {
 }
 
 /// Recursively collect every `.jsonl` file under `root`. Any unreadable entry
-/// (permissions, a race with a delete) is silently skipped — discovery must
+/// (permissions, a race with a delete) is silently skipped: discovery must
 /// never fail the whole scan over one bad directory.
 pub fn list_transcripts(root: &Path) -> Vec<FileMeta> {
     let mut out = Vec::new();

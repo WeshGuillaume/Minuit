@@ -1,8 +1,8 @@
-// bindingWindow — pick the most constraining rate limit from the live signal.
+// bindingWindow: pick the most constraining rate limit from the live signal.
 //
 // A Max plan can expose several simultaneous caps (all-models weekly, Sonnet-
 // only, and possibly others added later). We treat the response as an
-// independent list of constraints and keep the one closest to its cap — the
+// independent list of constraints and keep the one closest to its cap, the
 // highest usedPercent. Any future key flows through unchanged; there is no
 // hard-coded set of window names here.
 //

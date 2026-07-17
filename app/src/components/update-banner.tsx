@@ -1,7 +1,7 @@
 /*
  * Update overlay: full-screen, blocking, no way to dismiss it. As soon as a
  * version is detected, the download + install starts automatically (see
- * useUpdater) — this screen only shows its progress.
+ * useUpdater); this screen only shows its progress.
  */
 
 import { Loader2 } from "lucide-react";

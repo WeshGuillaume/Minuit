@@ -52,6 +52,10 @@ interface GaugeTickProps {
   tickRadius: number;
   tickLength: number;
   onHover?: (tick: Tick) => void;
+  /** Extra class on this tick's fill rect - e.g. an `animate-*` utility to call
+   * out one tick (the current-value frontier, a hovered mark) without a caller
+   * needing its own overlay. */
+  fillClassName?: string;
 }
 
 function GaugeTick({
@@ -68,6 +72,7 @@ function GaugeTick({
   tickRadius,
   tickLength,
   onHover,
+  fillClassName,
 }: GaugeTickProps) {
   const midX = (tick.x1 + tick.x2) / 2;
   const midY = (tick.y1 + tick.y2) / 2;
@@ -89,6 +94,7 @@ function GaugeTick({
           fill={fillColor}
           opacity={fillOpacity}
           filter={fillFilterId ? `url(#${fillFilterId})` : undefined}
+          className={fillClassName}
           style={{
             transformBox: "fill-box",
             transformOrigin: "50% 100%",
@@ -103,7 +109,7 @@ function GaugeTick({
           d={hitWedge(tick.angle, hitHalfAngle, tickRadius - tickLength - 6, tickRadius + 6)}
           fill="transparent"
           // Below --container-dial-decorated (index.css) the dial swaps to its
-          // coarse ring — its reduced mode. There the wedges are too cramped to
+          // coarse ring, its reduced mode. There the wedges are too cramped to
           // isolate a zone meaningfully, so the hit target goes inert via an
           // !important override of the inline pointer-events. Above the
           // threshold only the fine ring is visible, so its hover still works.

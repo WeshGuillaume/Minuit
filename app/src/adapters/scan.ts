@@ -1,5 +1,5 @@
 // Axis-1's local event stream. The heavy walk + parse of ~/.claude/projects now
-// runs natively in Rust (see src-tauri/src/scan) — this just invokes it and
+// runs natively in Rust (see src-tauri/src/scan); this just invokes it and
 // memoizes the result briefly so switching windows or the 3-min usage refresh
 // doesn't re-invoke a scan that can't have changed. The Rust side keeps its own
 // on-disk cache, so a cold app start only re-parses the transcripts touched

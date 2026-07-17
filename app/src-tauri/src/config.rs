@@ -5,6 +5,44 @@
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, Runtime};
 
+/// Work schedule, read by the frontend (not the native side) to anchor the
+/// sustainable-rate projection on active hours rather than the wall clock.
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct WorkConfig {
+  /// Hours per day you actually work. 24 = round-the-clock (the neutral default,
+  /// identical to the old behaviour); lower means the headroom is spread over
+  /// your working hours, so the maxxing rate reflects real sessions.
+  pub hours_per_day: f64,
+}
+
+impl Default for WorkConfig {
+  fn default() -> Self {
+    Self { hours_per_day: 24.0 }
+  }
+}
+
+/// Dial-axis display, read by the frontend. "broken" = the fixed pace track
+/// (maxxing reads big and central); "linear" = a straight, true-proportion axis.
+/// Kept as strings so a typo can't break the whole (native-side) config parse.
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DisplayConfig {
+  /// Pace dial: "broken" or "linear".
+  pub pace_axis: String,
+  /// tok/h dial: "broken" or "linear".
+  pub token_axis: String,
+}
+
+impl Default for DisplayConfig {
+  fn default() -> Self {
+    Self {
+      pace_axis: "broken".into(),
+      token_axis: "linear".into(),
+    }
+  }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Config {
@@ -22,6 +60,11 @@ pub struct Config {
   pub appear_shortcut: Option<String>,
   /// Show in the Dock and the Cmd+Tab switcher (Regular vs. Accessory app).
   pub show_in_dock: bool,
+  /// Frontend-only work schedule (see WorkConfig); carried here so the
+  /// auto-written template documents it. The native side never reads it.
+  pub work: WorkConfig,
+  /// Frontend-only dial-axis display (see DisplayConfig).
+  pub display: DisplayConfig,
 }
 
 impl Default for Config {
@@ -35,6 +78,8 @@ impl Default for Config {
       close_on_click_outside: false,
       appear_shortcut: None,
       show_in_dock: true,
+      work: WorkConfig::default(),
+      display: DisplayConfig::default(),
     }
   }
 }

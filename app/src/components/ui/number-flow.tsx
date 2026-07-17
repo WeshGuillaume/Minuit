@@ -1,6 +1,6 @@
 // Thin React binding over NumberFlow's vanilla custom element (barvian's
 // `number-flow`). Importing the package auto-registers `<number-flow>`; we just
-// forward the value through `.update()` — the first call seeds, later calls
+// forward the value through `.update()`: the first call seeds, later calls
 // animate the digit transition. Kept vanilla on purpose: no React wrapper weight.
 
 import "number-flow";

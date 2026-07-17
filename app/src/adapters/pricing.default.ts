@@ -1,17 +1,41 @@
 // Baseline pricing shipped with the app. Edit `~/.minuit/pricing.json` to
 // override any field (loadPricing merges it on top) rather than touching this.
 // Rates are USD per MILLION tokens, per tier. ⚠️ `fable` is a placeholder cloned
-// from opus — update it once its real API rates are published.
+// from opus; update it once its real API rates are published.
 
 import type { Pricing } from "@core/types";
 
 export const DEFAULT_PRICING: Pricing = {
   updated: "2026-07-15",
   models: {
-    opus: { input: 15, output: 75, cacheRead: 1.5, cacheWrite5m: 18.75, cacheWrite1h: 30 },
-    sonnet: { input: 3, output: 15, cacheRead: 0.3, cacheWrite5m: 3.75, cacheWrite1h: 6 },
-    haiku: { input: 0.8, output: 4, cacheRead: 0.08, cacheWrite5m: 1, cacheWrite1h: 1.6 },
-    fable: { input: 15, output: 75, cacheRead: 1.5, cacheWrite5m: 18.75, cacheWrite1h: 30 },
+    opus: {
+      input: 15,
+      output: 75,
+      cacheRead: 1.5,
+      cacheWrite5m: 18.75,
+      cacheWrite1h: 30,
+    },
+    sonnet: {
+      input: 3,
+      output: 15,
+      cacheRead: 0.3,
+      cacheWrite5m: 3.75,
+      cacheWrite1h: 6,
+    },
+    haiku: {
+      input: 0.8,
+      output: 4,
+      cacheRead: 0.08,
+      cacheWrite5m: 1,
+      cacheWrite1h: 1.6,
+    },
+    fable: {
+      input: 15,
+      output: 75,
+      cacheRead: 1.5,
+      cacheWrite5m: 18.75,
+      cacheWrite1h: 30,
+    },
   },
   match: [
     { pattern: "opus", family: "opus" },
@@ -25,7 +49,14 @@ export const DEFAULT_PRICING: Pricing = {
   ratioThresholds: { underuse: 0.5, breakEven: 1.1 },
   projection: { lookbackWeeks: 4 },
   pace: {
-    recentWindowHours: 0.5, // live-burn window for the needle; shorter = nervier
-    thresholds: { underfarm: 0.5, slow: 0.85, fast: 1.15, redline: 1.5, blown: 2 },
+    // NB: BOTH smoothing windows (live + smooth) are runtime prefs, per rate-limit
+    // window, in config.json → pace.readoutMinutes / pace.smoothMinutes — not here.
+    thresholds: {
+      coasting: 0.5,
+      maxxing: 0.85,
+      redlining: 1.15,
+      turbo: 1.5,
+      nitro: 2,
+    },
   },
 };

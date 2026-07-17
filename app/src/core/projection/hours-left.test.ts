@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { hoursLeft } from "./hours-left";
 
 describe("hoursLeft", () => {
-  it("divides remaining headroom by the habitual pace", () => {
+  it("divides remaining headroom by the live rate", () => {
     expect(hoursLeft(40, 2)).toBe(30); // (100-40)/2
   });
 

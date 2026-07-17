@@ -1,4 +1,4 @@
-// dollarsPerPct — the keystone conversion: how many USD of API value equal one
+// dollarsPerPct: the keystone conversion, how many USD of API value equal one
 // percentage point of the window's cap. It bridges the two axes, turning a
 // dollar threshold (the ratio) into a position on the percent track.
 //

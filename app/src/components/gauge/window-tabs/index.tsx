@@ -3,7 +3,7 @@
 // renders both its icon and its label; which one shows is decided purely by
 // CSS, with no JS boolean and no measurement flash. Two conditions must BOTH
 // hold for the label: the tabs' own "stack" container has the width for it,
-// AND the panel isn't in a very short row arrangement — plenty of width is
+// AND the panel isn't in a very short row arrangement: plenty of width is
 // available there too (the dial doesn't take much of it), but full labels
 // read as clutter next to the dial in a squat window, so that shape prefers
 // icons even though it could technically fit the text.
@@ -36,7 +36,7 @@ function TabHighlight() {
   );
 }
 
-// Tailwind needs each class as one static string literal — a chained variant
+// Tailwind needs each class as one static string literal; a chained variant
 // built by interpolating a shared prefix constant never matches anything, so
 // "label room" is spelled out in full at each of its three uses below (icon,
 // label, button padding) rather than shared as a JS string.

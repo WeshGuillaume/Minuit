@@ -41,7 +41,7 @@ export function useSignalRefresh(onRefreshed: () => void = () => {}): SignalRefr
       const creds = await readCredentials();
       const probe = creds ? await probeAndCache(creds) : null;
       if (probe?.ok && parseUsage(probe.body, Date.now()).length > 0) onRefreshed();
-      else setError(`usage ${probe?.status ?? probe?.error ?? "—"}`);
+      else setError(`usage ${probe?.status ?? probe?.error ?? "unknown"}`);
     } catch (e) {
       console.error("[minuit refresh] threw", e);
       setError(e instanceof Error ? e.message : String(e));

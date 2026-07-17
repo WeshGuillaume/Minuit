@@ -2,7 +2,7 @@
 //!
 //! Walking `~/.claude/projects/**` and parsing every transcript is far too much
 //! work to do across the JS bridge on every load (~1000 files, hundreds of MB).
-//! Here it runs natively, in parallel, and — via the on-disk cache — re-reads
+//! Here it runs natively, in parallel, and, via the on-disk cache, re-reads
 //! only the files that actually changed since last time. The webview receives
 //! just the compact event list.
 //!

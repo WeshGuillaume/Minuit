@@ -4,6 +4,48 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ---- Panel reveal ladder (see pages/gauge-page.tsx) ----------------------
+   The gauge panel is a size container named "panel"; these are its layout
+   breakpoints, defined ONCE here instead of hand-synced as literal
+   `[@container_panel_(…)]` strings across gauge-page / gauge-stack /
+   token-footer / speedo-dial / explainer. Each is named after what it OPENS,
+   and they rise in the product's own priority order (dial > number > label >
+   fuel gauge > level > tabs > footer/explainer): a taller/wider panel clears
+   each rung in turn, and — crucially — a panel too small for everything sheds
+   from the BOTTOM of that order. So `reveal` (fuel) sits BELOW `tabbed` (tabs):
+   a shape with room for the dial + fuel but not the tab row shows the fuel and
+   drops the tabs, never the reverse. `or` unions the two shapes that reach a
+   rung by different routes: a narrow-but-tall column vs a short-but-wide row
+   (where the fuel/tabs dock beside the dial, so they need width, not height).
+
+   Stacking on one element resolves by definition order below (later wins), so
+   the dial's width reserve reads base < reveal < tabbed < landscape correctly.
+
+   - reveal    : room for the dial + the fuel gauge below/beside it.
+   - tabbed    : room for the window tabs too (a taller column / taller row).
+   - footered  : room for the token-footer row too (portrait needs real width;
+                 row needs the wide-short floor).
+   - landscape : short AND wide enough to dock the dial left and stack beside.
+   - flat      : too short for anything below the dial's own arc — the badge and
+                 in-arc label drop, and the arc crops to its empty bottom. */
+@custom-variant reveal (
+  @container panel ((min-width: 110px) and (min-height: 170px)) or (
+    (min-width: 300px) and (min-height: 60px)
+  )
+);
+@custom-variant tabbed (
+  @container panel ((min-width: 110px) and (min-height: 240px)) or (
+    (max-height: 260px) and (min-width: 300px) and (min-height: 90px)
+  )
+);
+@custom-variant footered (
+  @container panel ((min-width: 200px) and (min-height: 340px)) or (
+    (max-height: 260px) and (min-width: 340px) and (min-height: 160px)
+  )
+);
+@custom-variant landscape (@container panel (max-height: 260px) and (min-width: 300px));
+@custom-variant flat (@container panel (max-height: 379px));
+
 :root {
   color-scheme: dark;
   --background: #252525;
@@ -48,8 +90,13 @@
   --pace-coasting: #14b8a6;
   --pace-maxxing: #22c55e;
   --pace-redlining: #f59e0b;
-  --pace-waytoofast: #f97316;
-  --pace-capped: #ef4444;
+  --pace-turbo: #60a5fa; /* blue, matches --shimmer-turbo-start */
+  --pace-nitro: #c084fc; /* violet, matches --shimmer-nitro-start */
+
+  --shimmer-turbo-start: #60a5fa;
+  --shimmer-turbo-mid: #bfdbfe;
+  --shimmer-nitro-start: #c084fc;
+  --shimmer-nitro-mid: #f0abfc;
 }
 
 html,
@@ -78,6 +125,16 @@ body {
   user-select: none;
 }
 
+/* Opt specific elements back INTO selection (the dev design page's specimen
+   labels, so a `WxH` can be copied for feedback). Must live here, un-layered,
+   not as a Tailwind `select-text` utility: the `*` rule above is un-layered and
+   always beats a layered utility regardless of specificity. */
+.selectable,
+.selectable * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* Base colours/typography: local design tokens (@layer base + .dark below). */
 
 /* Axis-1 warning light flicker — registered as the `animate-thunder-flicker`
@@ -99,12 +156,48 @@ body {
   }
 }
 
+/* A hard on/off blink — registered as the `animate-tick-blink` utility via
+   @theme below. Unlike thunder-flicker's brief dips (a subtle warning-light
+   tremor), this fully toggles: for marking a single small element (a tick) as
+   "live" where a real blink needs to read at a glance, not just tremor. */
+@keyframes tick-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The same hard on/off as tick-blink, but capped at a dimmed peak instead of
+   full opacity — registered as the `animate-tick-blink-dim` utility via
+   @theme below. For a tick that's still "the live frontier" (so still
+   blinks) but has been recolored to match a dimmed group next to it (see
+   fuel-gauge/index.tsx) - stacking a plain `opacity-*` utility on top of
+   `animate-tick-blink` wouldn't work (a running animation's own keyframe
+   values always win over a separate static utility on the same property),
+   so the reduced peak has to be its own keyframe. */
+@keyframes tick-blink-dim {
+  0%,
+  49% {
+    opacity: 0.6;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
 @theme inline {
   --container-dial-labeled: 100px;
   --container-dial-interactive: 90px;
   --container-dial-captioned: 130px;
   --container-dial-decorated: 190px;
   --animate-thunder-flicker: thunder-flicker 3.4s steps(1, end) infinite;
+  --animate-tick-blink: tick-blink 1s steps(1, end) infinite;
+  --animate-tick-blink-dim: tick-blink-dim 1s steps(1, end) infinite;
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -145,8 +238,8 @@ body {
   --color-pace-coasting: var(--pace-coasting);
   --color-pace-maxxing: var(--pace-maxxing);
   --color-pace-redlining: var(--pace-redlining);
-  --color-pace-waytoofast: var(--pace-waytoofast);
-  --color-pace-capped: var(--pace-capped);
+  --color-pace-turbo: var(--pace-turbo);
+  --color-pace-nitro: var(--pace-nitro);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

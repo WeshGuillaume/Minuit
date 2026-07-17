@@ -3,7 +3,7 @@
 //! One Claude session is one `.jsonl` file of newline-delimited JSON. Only
 //! `assistant` rows carrying a `message.usage` block cost tokens, so those are
 //! the only rows we keep. Parsing is deliberately tolerant: Claude appends live,
-//! so the last line can be half-written — a row that fails to parse is skipped,
+//! so the last line can be half-written; a row that fails to parse is skipped,
 //! never fatal. This is the Rust port of the old `adapters/jsonl.ts`.
 
 use serde::Deserialize;

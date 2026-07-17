@@ -38,7 +38,7 @@ async fn fetch_usage(token: String) -> Result<UsageProbe, String> {
 }
 
 // Axis-1's local scan. Discovering and parsing every transcript is too heavy to
-// do across the JS bridge, so it runs natively — see `scan`. `spawn_blocking`
+// do across the JS bridge, so it runs natively; see `scan`. `spawn_blocking`
 // keeps the fs + parse work off the async runtime so the UI stays responsive.
 #[tauri::command]
 async fn scan_events(

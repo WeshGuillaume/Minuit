@@ -1,7 +1,7 @@
 // Applies `Config` to the main window at launch, and the toggle used by the
 // global shortcut. macOS-specific bits (traffic lights, Dock/Cmd+Tab presence)
 // are guarded; other platforms just skip them. Concrete (default-runtime) types
-// throughout — decorum's extension trait is only implemented for those.
+// throughout, since decorum's extension trait is only implemented for those.
 
 use crate::config::Config;
 use tauri::{AppHandle, LogicalSize, Manager, WebviewWindow};
@@ -13,7 +13,7 @@ pub fn apply(app: &AppHandle, win: &WebviewWindow, cfg: &Config) {
   set_traffic_lights(win, cfg.traffic_lights);
 }
 
-/// Show/hide via the app activation policy — Accessory removes the app from both
+/// Show/hide via the app activation policy: Accessory removes the app from both
 /// the Dock and the Cmd+Tab switcher; Regular restores it.
 #[cfg(target_os = "macos")]
 fn set_dock_visible(app: &AppHandle, visible: bool) {

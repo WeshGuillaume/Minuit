@@ -11,7 +11,7 @@ interface Entry<T> {
 }
 
 // Read the full entry (value + write time) when still within TTL. `at` lets a
-// caller know HOW OLD the cached value is — used to extrapolate a live figure
+// caller know HOW OLD the cached value is, used to extrapolate a live figure
 // from a throttled signal (see buildGauge's currentPct advance).
 export const readCacheEntry = async <T>(
   name: string,

@@ -2,14 +2,14 @@
 //!
 //! This mirrors the TypeScript `UsageEvent` shape field-for-field so the JS core
 //! stays untouched. `serde(rename_all = "camelCase")` lines the names up across
-//! the Tauri bridge — Rust `cache_write_5m` becomes JS `cacheWrite5m`, etc.
+//! the Tauri bridge: Rust `cache_write_5m` becomes JS `cacheWrite5m`, etc.
 
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UsageEvent {
-    /// Message id — used to dedup a turn that shows up in more than one file.
+    /// Message id, used to dedup a turn that shows up in more than one file.
     pub uuid: String,
     /// Epoch milliseconds, matching JS `Date.parse`.
     pub timestamp: i64,

@@ -1,4 +1,4 @@
-// Dev-only prototype of the EthicalAds text placement — a mini textual banner
+// Dev-only prototype of the EthicalAds text placement, a mini textual banner
 // pinned to the bottom of the window. It mirrors the real `data-ea-type="text"`
 // DOM (a body link + the "Ads by EthicalAds" callout) so the placement and
 // styling match what the live client will render, but ships sample copy and
@@ -8,7 +8,7 @@
 // A handful of sample ads so the banner isn't visually frozen while iterating.
 const SAMPLE_ADS = [
   {
-    body: "Ship faster with Acme CI — parallel builds, zero config.",
+    body: "Ship faster with Acme CI: parallel builds, zero config.",
     cta: "Start free",
     href: "https://example.com/acme",
   },
@@ -25,7 +25,7 @@ const SAMPLE_ADS = [
 ] as const;
 
 // Rotate by day so a given dev session sees a stable ad, not a flicker on every
-// render. (No Math.random — keeps the render deterministic.)
+// render. (No Math.random, keeps the render deterministic.)
 const pickAd = () => SAMPLE_ADS[Math.floor(Date.now() / 86_400_000) % SAMPLE_ADS.length];
 
 export function AdBanner() {
@@ -54,5 +54,5 @@ export function AdBanner() {
 
 // To go live later: load `https://media.ethicalads.io/media/client/ethicalads.min.js`
 // (manual mode, `data-ea-manual`), render `<div data-ea-publisher="<id>"
-// data-ea-type="text">`, and call `window.ethicalads.load()` on mount — then
+// data-ea-type="text">`, and call `window.ethicalads.load()` on mount, then
 // drop the DEV gate. See CLAUDE.md discussion for the Tauri origin caveat.

@@ -1,9 +1,16 @@
 import * as React from "react";
 import { NumberFlow } from "@/components/ui/number-flow";
-import { tickActiveColor, tickInactiveColor } from "@/components/ui/radial-gauge-colors";
+import {
+  tickActiveColor,
+  tickInactiveColor,
+} from "@/components/ui/radial-gauge-colors";
 import { TickFilters } from "@/components/ui/radial-gauge-filters";
 import { TickRing } from "@/components/ui/radial-gauge-ring";
-import type { Tick, TickActiveResolver, TickColor } from "@/components/ui/radial-gauge-tick";
+import type {
+  Tick,
+  TickActiveResolver,
+  TickColor,
+} from "@/components/ui/radial-gauge-tick";
 import { cn } from "@/lib/utils";
 
 interface RadialGaugeProps extends React.ComponentProps<"div"> {
@@ -12,14 +19,14 @@ interface RadialGaugeProps extends React.ComponentProps<"div"> {
   max?: number;
   tickCount?: number;
   /** Tick count for the coarse ring shown once the dial's own box drops below
-   * `--container-dial-decorated` (index.css) — fewer, wider marks read better
+   * `--container-dial-decorated` (index.css), fewer, wider marks read better
    * than a shrunk copy of the fine ring. */
   compactTickCount?: number;
   startAngle?: number;
   sweepAngle?: number;
   tickLength?: number;
   tickRadius?: number;
-  /** Tick length/radius for the coarse ring (see `compactTickCount`) — longer
+  /** Tick length/radius for the coarse ring (see `compactTickCount`): longer
    * and set further in than the fine ring's, so the coarse ring reads as a
    * bold band filling the dial rather than a thin ring floating in empty
    * space once the dial has shrunk too far for finesse. */
@@ -41,8 +48,30 @@ interface RadialGaugeProps extends React.ComponentProps<"div"> {
   fillDelay?: (tick: Tick) => number;
   /** Fired with the tick under the cursor, or null once the cursor leaves. */
   onTickHover?: (tick: Tick | null) => void;
-  /** A hollow "ghost" marker on the arc (0..1 of the sweep) — e.g. your habitual pace. */
+  /** Per-tick extra class on the fill rect - e.g. an `animate-*` utility to call
+   * out one tick (a current-value frontier, a hovered mark) without a caller
+   * needing its own overlay. */
+  tickClassName?: (tick: Tick) => string | undefined;
+  /** A hollow marker on the arc (0..1 of the sweep), e.g. where usage lands at reset. */
   ghostFraction?: number;
+  /** Value (same domain as `value`/`min`/`max`) to position a caller-supplied
+   * custom marker at - pairs with `cursor`. Unlike `ghostFraction` (a fixed
+   * hollow-circle shape, positioned by raw fraction), this lets the caller draw
+   * its own marker (a label, an arrow, a tooltip trigger) and think in the
+   * gauge's own value units instead of a 0..1 fraction. */
+  cursorValue?: number;
+  /** Render prop for `cursorValue`'s marker, called once per ring (fine, then
+   * compact - only one is ever visible, by the same CSS this component uses to
+   * swap rings). Given the marker's angle (RadialGauge's own convention: 0° is
+   * straight up, +clockwise) and that ring's own tickRadius/tickLength, so the
+   * caller can position ON the tick band (`polar(radius, angle)`) or OFFSET
+   * from it (e.g. `polar(radius - tickLength - gap, angle)` to sit below it) -
+   * whatever a fixed `{x,y}` pos couldn't express. */
+  cursor?: (info: {
+    angle: number;
+    tickRadius: number;
+    tickLength: number;
+  }) => React.ReactNode;
   tickWidth?: number;
   /** Tick width for the coarse ring (see `compactTickCount`). */
   compactTickWidth?: number;
@@ -58,6 +87,9 @@ const CENTER = 100;
 const DECORATED_HIDDEN = "hidden @dial-decorated/dial:block";
 const DECORATED_ONLY = "block @dial-decorated/dial:hidden";
 
+/** 0° is straight up, +clockwise - the same convention `startAngle`/`sweepAngle`
+ * use throughout. Exported so callers positioning their own content (e.g. a
+ * `cursor` marker) into this gauge's 200×200 viewBox share the exact same math. */
 function polarToCartesian(radius: number, angleDeg: number) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   return {
@@ -83,7 +115,7 @@ function GhostMarker({
   const angle = startAngle + Math.min(1, Math.max(0, fraction)) * sweepAngle;
   // Two markers, not one: the ghost sits just past the tick radius, and that
   // radius differs between the fine and coarse rings (see compactTickRadius
-  // above) — anchoring to the fine ring's radius alone left it floating
+  // above): anchoring to the fine ring's radius alone left it floating
   // outside the coarse ring once the dial shrank far enough to swap rings.
   const fine = polarToCartesian(tickRadius + 5, angle);
   const compact = polarToCartesian(compactTickRadius + 5, angle);
@@ -105,6 +137,55 @@ function GhostMarker({
         strokeWidth={1.4}
         opacity={0.75}
       />
+    </g>
+  );
+}
+
+/** A caller-drawn marker on the arc, at `value` (same domain as the gauge's own
+ * value). Hands the render prop each ring's own angle/radius/length (see
+ * RadialGaugeProps.cursor) rather than a fixed position, so the caller can
+ * offset from the tick band instead of only sitting on it. */
+function Cursor({
+  value,
+  min,
+  max,
+  startAngle,
+  sweepAngle,
+  tickRadius,
+  tickLength,
+  compactTickRadius,
+  compactTickLength,
+  render,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  startAngle: number;
+  sweepAngle: number;
+  tickRadius: number;
+  tickLength: number;
+  compactTickRadius: number;
+  compactTickLength: number;
+  render: (info: {
+    angle: number;
+    tickRadius: number;
+    tickLength: number;
+  }) => React.ReactNode;
+}) {
+  const fraction = Math.min(1, Math.max(0, (value - min) / (max - min)));
+  const angle = startAngle + fraction * sweepAngle;
+  return (
+    <g data-slot="radial-gauge-cursor">
+      <g className={DECORATED_HIDDEN}>
+        {render({ angle, tickRadius, tickLength })}
+      </g>
+      <g className={DECORATED_ONLY}>
+        {render({
+          angle,
+          tickRadius: compactTickRadius,
+          tickLength: compactTickLength,
+        })}
+      </g>
     </g>
   );
 }
@@ -157,7 +238,10 @@ function RadialGauge({
   resolveActive,
   fillDelay,
   onTickHover,
+  tickClassName,
   ghostFraction,
+  cursorValue,
+  cursor,
   tickWidth = 4,
   compactTickWidth = 6,
   tickInsetShadow = true,
@@ -173,11 +257,22 @@ function RadialGauge({
   const clamped = Math.min(max, Math.max(min, value));
   const fraction = (clamped - min) / (max - min);
   const activeAngle = startAngle + fraction * sweepAngle;
-  const glowIntensity = Math.min(1, Math.max(0, glow));
+  // Clamped to a generous ceiling, not to 1: the neon filter (radial-gauge-
+  // filters.tsx) is built to keep reading as brighter light well past 1, so
+  // callers can dial the bloom up; 4 just caps the blur region before it turns
+  // into an expensive full-viewBox smear.
+  const glowIntensity = Math.min(4, Math.max(0, glow));
   const step = sweepAngle / (tickCount - 1);
   const compactStep = sweepAngle / (compactTickCount - 1);
 
-  const ticks = buildTicks(tickCount, startAngle, sweepAngle, tickRadius, tickLength, activeAngle);
+  const ticks = buildTicks(
+    tickCount,
+    startAngle,
+    sweepAngle,
+    tickRadius,
+    tickLength,
+    activeAngle,
+  );
   const compactTicks = buildTicks(
     compactTickCount,
     startAngle,
@@ -203,11 +298,12 @@ function RadialGauge({
     insetId: tickInsetShadow ? insetId : null,
     glowId: glowIntensity > 0 ? glowId : null,
     onHover: onTickHover,
+    tickClassName,
   };
 
   return (
     // The sweep is open at the bottom (260° of 360°), so a perfectly square
-    // box always has dead space below the lowest tick/badge — cropped here by
+    // box always has dead space below the lowest tick/badge, cropped here by
     // giving the OUTER box a shorter aspect ratio with overflow-hidden, while
     // the INNER box stays a true, undistorted square pinned to its top. Every
     // internal position (ticks, center label, bottomSlot) is computed against
@@ -216,12 +312,15 @@ function RadialGauge({
     // Kept small (0.95, not a more aggressive crop): below --container-dial-
     // decorated the badge is replaced by the zone-name label (speedo-dial.tsx),
     // which is the common case across most realistic dial sizes, not the rare
-    // one — a bigger crop reliably clipped that label at the smallest sizes,
+    // one: a bigger crop reliably clipped that label at the smallest sizes,
     // since this ratio can't itself react to the dial's own size (it's the
     // dial's OWN box being sized, so it can't query itself).
     <div
       data-slot="radial-gauge"
-      className={cn("relative aspect-[1/0.95] w-full max-w-60 -mb-12 overflow-hidden", className)}
+      className={cn(
+        "relative aspect-[1/0.95] w-full -mb-12 overflow-hidden",
+        className,
+      )}
       {...props}
     >
       <div className="absolute inset-x-0 top-0 flex aspect-square w-full items-center justify-center">
@@ -231,7 +330,11 @@ function RadialGauge({
           role="img"
           aria-label={formatLabel(clamped)}
         >
-          <TickFilters insetId={insetId} glowId={glowId} glowIntensity={glowIntensity} />
+          <TickFilters
+            insetId={insetId}
+            glowId={glowId}
+            glowIntensity={glowIntensity}
+          />
           <TickRing
             {...ring}
             ticks={ticks}
@@ -259,6 +362,20 @@ function RadialGauge({
               compactTickRadius={compactTickRadius}
             />
           )}
+          {cursorValue != null && cursor && (
+            <Cursor
+              value={cursorValue}
+              min={min}
+              max={max}
+              startAngle={startAngle}
+              sweepAngle={sweepAngle}
+              tickRadius={tickRadius}
+              tickLength={tickLength}
+              compactTickRadius={compactTickRadius}
+              compactTickLength={compactTickLength}
+              render={cursor}
+            />
+          )}
           {labels.map((label) => (
             <text
               key={label.value}
@@ -275,14 +392,18 @@ function RadialGauge({
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-lg font-normal text-foreground">
-            {centerLabel ?? <NumberFlow value={Math.round(clamped)} suffix={centerSuffix} />}
+            {centerLabel ?? (
+              <NumberFlow value={Math.round(clamped)} suffix={centerSuffix} />
+            )}
           </span>
-          {children ? <div className="pointer-events-auto mt-1">{children}</div> : null}
+          {children ? (
+            <div className="pointer-events-auto mt-1">{children}</div>
+          ) : null}
         </div>
         {bottomSlot ? (
           // bottom-[5%], not bottom-0: the inner square is taller than the
           // OUTER box (aspect-[1/0.95] crops 5% off the bottom), so the
-          // inner square's own bottom edge sits past the crop line — a
+          // inner square's own bottom edge sits past the crop line, so a
           // badge pinned there gets its bottom sliced off. Anchoring 5% up
           // from the inner square's bottom instead lands it exactly on the
           // crop line, keeping the whole badge visible at any dial size.
@@ -295,4 +416,4 @@ function RadialGauge({
   );
 }
 
-export { RadialGauge, type RadialGaugeProps };
+export { polarToCartesian, RadialGauge, type RadialGaugeProps };

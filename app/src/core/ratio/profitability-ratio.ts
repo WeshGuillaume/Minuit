@@ -1,4 +1,4 @@
-// profitabilityRatio — how many times over the window's subscription cost the
+// profitabilityRatio: how many times over the window's subscription cost the
 // API-equivalent token value is.
 //
 // Formula:  ratio = apiValue / windowSubCost

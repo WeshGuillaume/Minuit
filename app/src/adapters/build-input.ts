@@ -1,12 +1,21 @@
 // The one async seam that assembles a live GaugeInput from the machine: local
 // transcripts (Axis 1) + the OAuth usage signal (Axis 2) + pricing + calibration.
 // buildGauge stays pure; all disk/network/clock reads are gathered here. Every
-// source degrades independently — no token, no network, or a schema drift leaves
+// source degrades independently: no token, no network, or a schema drift leaves
 // `constraints` empty and the report simply reports "signal unavailable".
 
+import { windowApiValue } from "@core/cost/window-api-value";
 import { bindingWindow } from "@core/limits/binding-window";
-import type { GaugeInput, ToolId, WindowKey } from "@core/types";
+import type {
+  GaugeInput,
+  Pricing,
+  RateConstraint,
+  ToolId,
+  UsageEvent,
+  WindowKey,
+} from "@core/types";
 import { buildCalibration } from "./calibration";
+import { loadConfig } from "./config";
 import type { Credentials } from "./credentials";
 import { loadPricing } from "./pricing";
 import { scanAllEvents } from "./scan";
@@ -38,15 +47,36 @@ const usageSignal = async (creds: Credentials, bypassCache: boolean): Promise<Us
 
 const liveConstraints = async (window: WindowKey, now: number) => {
   const { creds, refreshed } = await freshCredentials();
-  if (!creds) return { constraints: [], capturedAt: now };
+  if (!creds) return { constraints: [], all: [], capturedAt: now };
   const { body, capturedAt } = await usageSignal(creds, refreshed);
   const all = body ? parseUsage(body, now) : [];
-  return { constraints: all.filter((c) => windowKeyOf(c.key) === window), capturedAt };
+  return { constraints: all.filter((c) => windowKeyOf(c.key) === window), all, capturedAt };
 };
+
+// The OTHER live caps (not the selected window), each with the $ burned inside
+// its own window so buildGauge can bind the pace on the tightest wall.
+const crossWindowsOf = (
+  all: RateConstraint[],
+  window: WindowKey,
+  events: UsageEvent[],
+  pricing: Pricing,
+  now: number,
+) =>
+  all
+    .filter((c) => windowKeyOf(c.key) !== window)
+    .map((c) => ({
+      usedPct: c.usedPercent,
+      resetsAt: c.resetsAt,
+      windowSeconds: c.windowSeconds,
+      apiValue: windowApiValue(
+        events.filter((e) => e.timestamp >= now - c.windowSeconds * 1_000),
+        pricing,
+      ),
+    }));
 
 export const buildRealInput = async (tool: ToolId, window: WindowKey): Promise<GaugeInput> => {
   const now = Date.now();
-  const pricing = await loadPricing();
+  const [pricing, config] = await Promise.all([loadPricing(), loadConfig()]);
   const lookbackMs = pricing.projection.lookbackWeeks * 7 * 86_400_000;
   const windowSeconds = WINDOW_SECONDS[window];
 
@@ -60,11 +90,11 @@ export const buildRealInput = async (tool: ToolId, window: WindowKey): Promise<G
     scanAllEvents(sinceMs),
     liveConstraints(window, now),
   ]);
-  const { constraints, capturedAt } = live;
+  const { constraints, all, capturedAt } = live;
 
-  const lookbackEvents = allEvents.filter((e) => e.timestamp >= now - lookbackMs);
   const windowEvents = allEvents.filter((e) => e.timestamp >= now - windowSeconds * 1_000);
   const binding = bindingWindow(constraints);
+  const crossWindows = crossWindowsOf(all, window, allEvents, pricing, now);
 
   return {
     tool,
@@ -76,6 +106,10 @@ export const buildRealInput = async (tool: ToolId, window: WindowKey): Promise<G
     events: windowEvents,
     constraints,
     windowSeconds,
-    calibration: buildCalibration(windowEvents, lookbackEvents, pricing, binding),
+    crossWindows,
+    workHoursPerDay: config.workHoursPerDay,
+    readoutWindowHours: config.readoutWindowHours[window],
+    smoothWindowHours: config.smoothWindowHours[window],
+    calibration: buildCalibration(windowEvents, pricing, binding),
   };
 };

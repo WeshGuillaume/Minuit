@@ -1,5 +1,5 @@
 // Screenshot / demo mode: synthetic GaugeReports that pin the speedometer into
-// each named zone (Underfarming → Capped) without touching real usage. Activated
+// each named zone (Underfarming through Nitro) without touching real usage. Activated
 // from the DemoPicker overlay, which stores the active scenario id in localStorage;
 // loadReport (source.ts) short-circuits to demoReport() when one is set, so the
 // entire real render pipeline paints these numbers unchanged. Inert otherwise:
@@ -7,7 +7,7 @@
 //
 // Everything is COHERENT by construction: each scenario is a token volume, and
 // apiValue / tokens / ratio all flow from the SAME synthetic events through the
-// real pure core (windowApiValue, windowBreakdown, profitabilityRatio) — never
+// real pure core (windowApiValue, windowBreakdown, profitabilityRatio), never
 // three independently-invented numbers. The pace rates are derived from currentPct
 // and time-to-reset so pace 1 lands exactly at the cap.
 
@@ -20,9 +20,12 @@ import { DEFAULT_PRICING } from "../../adapters/pricing.default";
 
 const H = 3_600_000;
 const SEVEN_DAY_HOURS = 168;
-const WINDOW_HOURS: Record<WindowKey, number> = { five_hour: 5, seven_day: SEVEN_DAY_HOURS };
+const WINDOW_HOURS: Record<WindowKey, number> = {
+  five_hour: 5,
+  seven_day: SEVEN_DAY_HOURS,
+};
 
-// One active hour of heavy Opus work — the fixed "working intensity". Scenarios
+// One active hour of heavy Opus work: the fixed "working intensity". Scenarios
 // differ only in how MANY such hours they stack, so throughput and cache-hit rate
 // stay constant while volume (and thus apiValue / ratio) scales with the zone.
 const PER_HOUR: Omit<UsageEvent, "uuid" | "timestamp" | "model"> = {
@@ -39,22 +42,20 @@ export interface DemoScenario {
   label: string;
   zone: ZoneId;
   pace: number; // needle
-  habitualPace: number; // ghost
   currentPct: number; // raw usage anchor under the dial
   resetFraction: number; // share of the window still left before reset (0..1)
   activeHours: number; // active hours of work over a 7-day window (scaled per window)
 }
 
-// pace values sit clearly inside each band (cuts at 0.5 / 0.85 / 1.15 / 1.5 / 2.0
-// — see paceBounds). Capped forces currentPct ≥ 100.
+// pace values sit clearly inside each band (cuts at 0.5 / 0.85 / 1.15 / 1.5 / 2.0,
+// see paceBounds). Capped forces currentPct ≥ 100.
 export const SCENARIOS: readonly DemoScenario[] = [
   {
     id: "underfarming",
     key: "1",
     label: "Underfarming",
-    zone: "underuse",
+    zone: "underfarming",
     pace: 0.3,
-    habitualPace: 0.42,
     currentPct: 11,
     resetFraction: 0.62,
     activeHours: 11,
@@ -63,9 +64,8 @@ export const SCENARIOS: readonly DemoScenario[] = [
     id: "coasting",
     key: "2",
     label: "Coasting",
-    zone: "profitable",
+    zone: "coasting",
     pace: 0.68,
-    habitualPace: 0.74,
     currentPct: 34,
     resetFraction: 0.55,
     activeHours: 24,
@@ -74,9 +74,8 @@ export const SCENARIOS: readonly DemoScenario[] = [
     id: "maxxing",
     key: "3",
     label: "Maxxing",
-    zone: "clear",
+    zone: "maxxing",
     pace: 1.0,
-    habitualPace: 0.96,
     currentPct: 52,
     resetFraction: 0.48,
     activeHours: 38,
@@ -85,31 +84,28 @@ export const SCENARIOS: readonly DemoScenario[] = [
     id: "redlining",
     key: "4",
     label: "Redlining",
-    zone: "warn",
+    zone: "redlining",
     pace: 1.3,
-    habitualPace: 1.05,
     currentPct: 63,
     resetFraction: 0.4,
     activeHours: 49,
   },
   {
-    id: "way-too-fast",
+    id: "turbo",
     key: "5",
-    label: "Way Too Fast",
-    zone: "noreturn",
-    pace: 1.72,
-    habitualPace: 1.18,
+    label: "Turbo",
+    zone: "turbo",
+    pace: 1.8,
     currentPct: 78,
     resetFraction: 0.3,
     activeHours: 62,
   },
   {
-    id: "capped",
+    id: "nitro",
     key: "6",
-    label: "Capped",
-    zone: "over",
+    label: "Nitro",
+    zone: "nitro",
     pace: 2.2,
-    habitualPace: 1.35,
     currentPct: 100,
     resetFraction: 0.18,
     activeHours: 76,
@@ -146,11 +142,11 @@ const toReport = (s: DemoScenario, tool: ToolId, window: WindowKey): GaugeReport
   // and coherent even for the capped scenario; the usage bar still shows currentPct.
   const rateAnchor = Math.min(s.currentPct, 96);
   const sustainableRatePct = (100 - rateAnchor) / hoursUntilReset;
-  const recentRatePct = s.pace * sustainableRatePct;
-  const habitualRatePct = s.habitualPace * sustainableRatePct;
+  const smoothRatePct = s.pace * sustainableRatePct;
 
   const activeHours = Math.max(1, Math.round(s.activeHours * (windowHours / SEVEN_DAY_HOURS)));
   const events = syntheticEvents(activeHours, now);
+  const tokens = windowBreakdown(events);
   const apiValue = windowApiValue(events, DEFAULT_PRICING);
   const subCost = windowSubCost(
     DEFAULT_PRICING.subscriptions[DEFAULT_PRICING.activePlan],
@@ -162,22 +158,22 @@ const toReport = (s: DemoScenario, tool: ToolId, window: WindowKey): GaugeReport
     tool,
     window,
     pace: s.pace,
-    habitualPace: s.habitualPace,
+    smoothPace: s.pace,
     paceThresholds: DEFAULT_PRICING.pace.thresholds,
     zone: s.zone,
-    recentRatePct,
-    habitualRatePct,
+    smoothZone: s.zone,
+    smoothRatePct,
     sustainableRatePct,
     currentPct: s.currentPct,
-    landingPct: rateAnchor + recentRatePct * hoursUntilReset,
-    hoursToCap: recentRatePct > 0 ? (100 - rateAnchor) / recentRatePct : Infinity,
+    landingPct: rateAnchor + smoothRatePct * hoursUntilReset,
+    hoursToCap: smoothRatePct > 0 ? (100 - rateAnchor) / smoothRatePct : Infinity,
     hoursUntilReset,
     resetsAt: now + hoursUntilReset * H,
     ratio: profitabilityRatio(apiValue, subCost),
     breakEvenRatio: DEFAULT_PRICING.ratioThresholds.breakEven,
     apiValue,
     planLabel: "Max 20×",
-    tokens: windowBreakdown(events),
+    tokens,
     calibrated: true,
     signalAvailable: true,
   };

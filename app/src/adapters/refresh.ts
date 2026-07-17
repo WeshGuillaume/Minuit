@@ -1,4 +1,4 @@
-// ⚠️ OAuth refresh — the ONLY code that writes credentials. Opt-in (a button),
+// ⚠️ OAuth refresh: the ONLY code that writes credentials. Opt-in (a button),
 // never automatic. POST the refresh grant to the (unofficial) token endpoint,
 // then write the rotated tokens back into the SAME Keychain item Claude uses, so
 // the two stay in sync rather than fighting over a rotated refresh token. The
@@ -52,7 +52,7 @@ const postRefresh = async (refreshToken: string): Promise<TokenResponse | null> 
         body,
       });
       if (res.ok) return res.json();
-      // Error bodies carry no secret — safe to log for diagnosis.
+      // Error bodies carry no secret, safe to log for diagnosis.
       console.warn("[minuit refresh] non-ok", url, res.status, await res.text());
     } catch (e) {
       console.warn("[minuit refresh] threw", url, e);

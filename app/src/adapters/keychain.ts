@@ -1,6 +1,6 @@
 // macOS Keychain read/write for the Claude Code credentials item. On macOS the
 // token lives only here (no file), so refreshing it means updating THIS item in
-// place — which is precisely what keeps a parallel `claude` session in sync
+// place, which is precisely what keeps a parallel `claude` session in sync
 // instead of stranding it on a rotated-away refresh token.
 //
 // `security` prints attributes on stdout, and the secret (with -w) on stdout too

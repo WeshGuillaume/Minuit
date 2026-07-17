@@ -8,7 +8,7 @@
 // switch, manual reload) shows the spinner; a SILENT background tick recomputes
 // every REFRESH_MS. The local jsonl scan is cheap (incremental, mtime-cached) so
 // the needle can follow your live burn every few seconds, while the unofficial
-// usage endpoint stays TTL-throttled underneath (see usage-api CACHE_TTL) — a
+// usage endpoint stays TTL-throttled underneath (see usage-api CACHE_TTL): a
 // silent tick only repaints from fresh LOCAL data, it does not re-hit the network.
 
 import type { GaugeReport, ToolId, WindowKey } from "@core/types";
@@ -36,7 +36,7 @@ export const useReport = (tool: ToolId, window: WindowKey): ReportState => {
   }, [tool, window]);
 
   // Foreground load: mount, tool/window change, or manual reload. Shows the spinner.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: nonce is a bump counter — reload() increments it purely to force this effect to re-run.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: nonce is a bump counter; reload() increments it purely to force this effect to re-run.
   useEffect(() => {
     let live = true;
     setRefreshing(true);

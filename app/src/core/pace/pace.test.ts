@@ -1,17 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { PACE_DISPLAY_MAX, paceBounds } from "../track/bounds";
 import { zoneOf } from "../track/zone-of";
 import type { PaceThresholds } from "../types";
-import { PACE_DISPLAY_MAX, paceBounds } from "./pace-bounds";
-import { paceValue } from "./pace-value";
 import { recentRate } from "./recent-rate";
 import { sustainableRate } from "./sustainable-rate";
 
 const THRESHOLDS: PaceThresholds = {
-  underfarm: 0.5,
-  slow: 0.85,
-  fast: 1.15,
-  redline: 1.5,
-  blown: 2,
+  coasting: 0.5,
+  maxxing: 0.85,
+  redlining: 1.15,
+  turbo: 1.5,
+  nitro: 2,
 };
 
 describe("sustainableRate", () => {
@@ -43,39 +42,23 @@ describe("recentRate", () => {
   });
 });
 
-describe("paceValue", () => {
-  it("is 1 when you burn exactly the sustainable rate (maxxing)", () => {
-    expect(paceValue(1, 1)).toBe(1);
-  });
-
-  it("reads the ratio for slow and fast burns", () => {
-    expect(paceValue(0.5, 1)).toBeCloseTo(0.5, 6); // half speed
-    expect(paceValue(2, 1)).toBeCloseTo(2, 6); // double speed
-  });
-
-  it("collapses to 0 when the cap is hit or the reset is reached", () => {
-    expect(paceValue(3, 0)).toBe(0); // sustainable 0 (capped)
-    expect(paceValue(3, Infinity)).toBe(0); // sustainable ∞ (reset now)
-  });
-});
-
 describe("paceBounds → zoneOf", () => {
   const bounds = paceBounds(THRESHOLDS);
   const zoneAt = (pace: number) => zoneOf(pace, bounds);
 
   it("maps each speed band to its named zone", () => {
-    expect(zoneAt(0.2)).toBe("underuse"); // beaucoup trop lent
-    expect(zoneAt(0.7)).toBe("profitable"); // trop lent
-    expect(zoneAt(1)).toBe("clear"); // maxxing 🎯
-    expect(zoneAt(1.3)).toBe("warn"); // trop vite
-    expect(zoneAt(1.7)).toBe("noreturn"); // beaucoup trop vite
-    expect(zoneAt(2.4)).toBe("over"); // blown past the cap trajectory
+    expect(zoneAt(0.2)).toBe("underfarming"); // way too slow
+    expect(zoneAt(0.7)).toBe("coasting"); // a little slow
+    expect(zoneAt(1)).toBe("maxxing"); // sweet spot 🎯
+    expect(zoneAt(1.3)).toBe("redlining"); // too fast
+    expect(zoneAt(1.7)).toBe("turbo"); // well over sustainable
+    expect(zoneAt(2.4)).toBe("nitro"); // past the cap trajectory
   });
 
   it("puts the maxxing sweet spot symmetrically around pace 1", () => {
-    expect(zoneAt(0.85)).toBe("clear");
-    expect(zoneAt(1.14)).toBe("clear");
-    expect(zoneAt(1.15)).toBe("warn"); // upper edge belongs to the next zone
+    expect(zoneAt(0.85)).toBe("maxxing");
+    expect(zoneAt(1.14)).toBe("maxxing");
+    expect(zoneAt(1.15)).toBe("redlining"); // upper edge belongs to the next zone
   });
 
   it("covers the whole track from 0 to the display max", () => {

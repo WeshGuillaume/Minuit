@@ -2,7 +2,7 @@
 //!
 //! Each entry is one transcript's parsed events, stamped with the mtime + size
 //! they were parsed at. On the next scan, a file whose mtime and size still match
-//! is reused verbatim — no disk read, no re-parse. This is what makes a refresh
+//! is reused verbatim, no disk read, no re-parse. This is what makes a refresh
 //! touch only the single transcript Claude is actively appending to, and a cold
 //! start re-read just the handful of files changed since last run.
 
@@ -45,7 +45,7 @@ pub struct ScanCache {
 
 impl ScanCache {
     /// Load the cache, treating any failure (missing, corrupt, schema drift) as
-    /// an empty cache — the scan then simply re-parses everything this run.
+    /// an empty cache: the scan then simply re-parses everything this run.
     pub fn load(path: &Path) -> Self {
         fs::read_to_string(path)
             .ok()

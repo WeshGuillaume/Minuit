@@ -6,14 +6,14 @@
 //   Esc                 leave demo mode (back to live data)
 //
 // Switching a scenario writes localStorage and calls onChange (useReport.reload),
-// so the live render pipeline repaints from demoReport() — see demo.ts / source.ts.
+// so the live render pipeline repaints from demoReport() - see demo.ts / source.ts.
 
-import { SEGMENTS } from "@core/track/segments";
+import { ZONES } from "@core/track/zones";
 import { paceZoneColorVar } from "@/components/ui/pace-zone-colors";
 import { SCENARIOS } from "../demo";
 import { useDemoPicker } from "./use-demo-picker";
 
-const ZONE_COLOR = Object.fromEntries(SEGMENTS.map((s) => [s.id, paceZoneColorVar(s.colorToken)]));
+const ZONE_COLOR = Object.fromEntries(ZONES.map((z) => [z.id, paceZoneColorVar(z.id)]));
 
 export function DemoPicker({ onChange }: { onChange: () => void }) {
   const { activeId, hidden, select } = useDemoPicker(onChange);

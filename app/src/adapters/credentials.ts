@@ -1,6 +1,6 @@
 // Read-only access to the Claude OAuth token. Two sources, same schema: the
 // macOS Keychain (where Claude Code stores it) first, then the plain
-// `~/.claude/.credentials.json` fallback. This module NEVER writes — refreshing
+// `~/.claude/.credentials.json` fallback. This module NEVER writes: refreshing
 // the token (the only path that could disturb a live `claude` session) is a
 // separate, opt-in concern that is intentionally not wired here.
 
@@ -41,7 +41,7 @@ export const readCredentials = async (): Promise<Credentials | null> => {
     const keychain = await fromKeychain();
     if (keychain) return keychain;
   } catch {
-    // Keychain locked/denied/absent — fall through to the file.
+    // Keychain locked/denied/absent: fall through to the file.
   }
   try {
     return await fromFile();

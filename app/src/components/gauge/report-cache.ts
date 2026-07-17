@@ -9,7 +9,7 @@
 
 import type { GaugeReport, ToolId, WindowKey } from "@core/types";
 
-const SCHEMA = "v2"; // ⬆ bump whenever GaugeReport's shape changes
+const SCHEMA = "v6"; // ⬆ bump whenever GaugeReport's shape changes (v6: zone ids renamed to their canonical names)
 const keyOf = (tool: ToolId, window: WindowKey) => `minuit:report:${SCHEMA}:${tool}:${window}`;
 
 export const readCachedReport = (tool: ToolId, window: WindowKey): GaugeReport | null => {

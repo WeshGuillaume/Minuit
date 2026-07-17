@@ -1,5 +1,5 @@
-// One density of tick marks around the dial. RadialGauge mounts two of these —
-// a fine ring for roomy dials, a coarse/wide one for cramped ones — so a shrunk
+// One density of tick marks around the dial. RadialGauge mounts two of these:
+// a fine ring for roomy dials, a coarse/wide one for cramped ones, so a shrunk
 // gauge reads as a few bold marks instead of an illegible fringe. Which ring is
 // visible is pure CSS (see radial-gauge.tsx): both always mount, and the hidden
 // one's hit targets are automatically out of the hit-testing tree along with it.
@@ -21,6 +21,8 @@ interface TickRingProps {
   glowId: string | null;
   onHover?: (tick: Tick | null) => void;
   className: string;
+  /** Per-tick extra class on the fill rect - see GaugeTick's `fillClassName`. */
+  tickClassName?: (tick: Tick) => string | undefined;
 }
 
 export function TickRing({
@@ -38,6 +40,7 @@ export function TickRing({
   glowId,
   onHover,
   className,
+  tickClassName,
 }: TickRingProps) {
   return (
     <g data-slot="radial-gauge-ring" className={className} onMouseLeave={() => onHover?.(null)}>
@@ -59,6 +62,7 @@ export function TickRing({
             tickRadius={tickRadius}
             tickLength={tickLength}
             onHover={onHover}
+            fillClassName={tickClassName?.(tick)}
           />
         );
       })}

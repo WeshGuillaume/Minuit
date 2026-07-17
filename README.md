@@ -123,9 +123,19 @@ The bundled app lands in `app/src-tauri/target/release/bundle/`.
 
 ## Configuration
 
-Window size and behavior are read from `~/.minuit/config.json` at launch.
-Minuit writes a default file the first time it runs, so you can just edit it.
-Settings apply on the next start (there is no live reload).
+Everything user-editable lives in `~/.minuit/`. Minuit writes template files
+there the first time it runs (with `config.json` pre-filled with defaults),
+so you can just edit them — no schema to look up. Two files matter:
+
+- **`config.json`** — window behavior + a few frontend prefs. Applied at
+  launch; **no live reload**, restart the app after editing.
+- **`pricing.json`** — API rates, subscription prices, and pace-zone cut
+  points. Not auto-written; create it yourself to override any field (a
+  shallow merge on top of the built-in defaults — nested objects like
+  `models` or `pace.thresholds` are replaced wholesale if present, not
+  deep-merged).
+
+### `config.json`
 
 ```json
 {
@@ -136,22 +146,84 @@ Settings apply on the next start (there is no live reload).
   "closeOnEsc": false,
   "closeOnClickOutside": false,
   "appearShortcut": "Cmd+Shift+8",
-  "showInDock": false
+  "showInDock": false,
+  "work": { "hoursPerDay": 8 },
+  "display": { "paceAxis": "broken" },
+  "pace": {
+    "readoutMinutes": { "five_hour": 2, "seven_day": 20 },
+    "smoothMinutes": { "five_hour": 30, "seven_day": 240 }
+  }
 }
 ```
 
-| Field                  | What it does                                                                        |
-| ---------------------- | ----------------------------------------------------------------------------------- |
-| `width` / `height`     | Logical window size at launch. Small values give you the mini dial.                 |
-| `trafficLights`        | Show the macOS red/yellow/green window buttons.                                     |
-| `alwaysOnTop`          | Keep the window floating above other windows.                                       |
-| `closeOnEsc`           | Hide the window when you press Escape.                                               |
-| `closeOnClickOutside`  | Hide the window when it loses focus.                                                 |
-| `appearShortcut`       | Global hotkey that toggles the window, for example `Cmd+Shift+8`. Omit to unbind.   |
-| `showInDock`           | Show Minuit in the Dock and Cmd+Tab switcher. Set to `false` for a background app.  |
+| Field                        | Default        | What it does                                                                                                                      |
+| ----------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `width` / `height`           | `330` / `467`  | Logical window size at launch. Small values give you the mini dial.                                                                  |
+| `trafficLights`               | `true`          | Show the macOS red/yellow/green window buttons.                                                                                       |
+| `alwaysOnTop`                  | `false`         | Keep the window floating above other windows.                                                                                          |
+| `closeOnEsc`                   | `true`          | Hide the window when you press Escape.                                                                                                  |
+| `closeOnClickOutside`          | `false`         | Hide the window when it loses focus.                                                                                                     |
+| `appearShortcut`               | unset           | Global hotkey that toggles the window, for example `Cmd+Shift+8`. Omit to unbind.                                                        |
+| `showInDock`                   | `true`          | Show Minuit in the Dock and Cmd+Tab switcher. Set to `false` for a background app.                                                       |
+| `work.hoursPerDay`             | `24`            | Hours per day you actually work, `0 < h ≤ 24`. Anchors the sustainable rate to your real working hours instead of the wall clock; 24 spreads it round-the-clock. |
+| `display.paceAxis`             | `"broken"`      | Pace dial scale: `"broken"` (fixed track, maxxing reads big and central) or `"linear"` (true-proportion axis).                          |
+| `pace.readoutMinutes`          | `{5h: 2, 7d: 20}` | How far back the **live** needle looks, in minutes, per rate-limit window. Shorter = nervier. Accepts a single number (applies to both windows) or `{ five_hour, seven_day }`. Clamped `0 < m ≤ 240`. |
+| `pace.smoothMinutes`           | `{5h: 30, 7d: 240}` | How far back the **smooth** pace looks, in minutes, per window — the steady recent rhythm that doesn't flatline between prompts. Same scalar-or-object shape. Clamped `0 < m ≤ 1440`. |
 
-The config above is a menubar-style setup: a tiny always-on-top dial, no Dock
-icon, no traffic lights, summoned with `Cmd+Shift+8`.
+The example above is a menubar-style setup: a tiny always-on-top dial, no
+Dock icon, no traffic lights, summoned with `Cmd+Shift+8`, tuned to an 8-hour
+workday.
+
+> `display.tokenAxis` also exists on disk (defaults to `"linear"`) but isn't
+> wired to anything in the current UI yet — safe to ignore.
+
+### `pricing.json`
+
+Not written automatically — create `~/.minuit/pricing.json` to override any
+subset of these fields. Edit this when Anthropic changes plan prices or API
+rates.
+
+```json
+{
+  "activePlan": "max5x",
+  "subscriptions": { "pro": 20, "max5x": 100, "max20x": 200 }
+}
+```
+
+| Field                                  | Default                                              | What it does                                                                 |
+| ---------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `updated`                                | `"2026-07-15"`                                          | Informational date stamp for when the rates below were last verified.           |
+| `models.<family>.input`                  | opus 15 · sonnet 3 · haiku 0.8 · fable 15               | Input token rate, USD per million tokens.                                       |
+| `models.<family>.output`                 | opus 75 · sonnet 15 · haiku 4 · fable 75                | Output token rate, USD per million tokens.                                      |
+| `models.<family>.cacheRead`              | opus 1.5 · sonnet 0.3 · haiku 0.08 · fable 1.5          | Cache-read rate, USD per million tokens.                                        |
+| `models.<family>.cacheWrite5m`           | opus 18.75 · sonnet 3.75 · haiku 1 · fable 18.75        | 5-minute ephemeral cache-write rate, USD per million tokens.                    |
+| `models.<family>.cacheWrite1h`           | opus 30 · sonnet 6 · haiku 1.6 · fable 30               | 1-hour ephemeral cache-write rate, USD per million tokens.                      |
+| `match`                                  | opus/sonnet/haiku/fable → themselves                    | Maps a substring of a model id (e.g. `claude-opus-4-8`) to a pricing family.     |
+| `subscriptions`                          | `{ pro: 20, max5x: 100, max20x: 200 }`                  | Monthly plan prices, USD.                                                       |
+| `activePlan`                             | `"max20x"`                                              | Which `subscriptions` key is currently active.                                  |
+| `subscriptionPeriodDays`                 | `30.44`                                                 | Average month length used to prorate the subscription cost.                     |
+| `ratioThresholds.underuse`               | `0.5`                                                   | Profitability-ratio badge verdict bound.                                        |
+| `ratioThresholds.breakEven`              | `1.1`                                                   | Ratio below which Anthropic would be running your usage at a loss (badge hover).|
+| `projection.lookbackWeeks`               | `4`                                                      | Calibration horizon for `dollarsPerPct` (recent-window $-to-% anchoring).       |
+| `pace.thresholds.coasting`               | `0.5`                                                    | Pace at which the Coasting zone opens.                                          |
+| `pace.thresholds.maxxing`                | `0.85`                                                   | Pace at which the Maxxing (sweet spot) zone opens.                              |
+| `pace.thresholds.redlining`              | `1.15`                                                   | Pace at which the Redlining zone opens.                                         |
+| `pace.thresholds.turbo`                  | `1.5`                                                    | Pace at which the Turbo zone opens.                                             |
+| `pace.thresholds.nitro`                  | `2`                                                       | Pace at which the Nitro zone opens.                                             |
+
+⚠️ `fable`'s rates are a placeholder cloned from `opus` — update them once
+Anthropic publishes real pricing for that tier.
+
+### Other files in `~/.minuit/`
+
+These are internal caches, not meant to be hand-edited:
+
+| File                        | Purpose                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| `scan-cache.json`              | Incremental JSONL scan cache, keyed by file mtime + size.               |
+| `usage-cache.json`             | TTL'd cache of the last `/api/oauth/usage` response (~3min).            |
+| `credentials-backup.json`      | One-time snapshot of your OAuth credentials, taken before any refresh.  |
+| `refresh.lock`                 | Lock file guarding the OAuth token refresh against a race with `claude`.|
 
 ## Contributing
 

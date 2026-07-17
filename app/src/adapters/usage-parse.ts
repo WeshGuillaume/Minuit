@@ -3,7 +3,7 @@
 //     seven_day_opus: null, seven_day_sonnet: {...}, extra_usage: {...} }
 // A Max plan lights up several seven_day_* caps at once; each becomes its own
 // independent constraint (bindingWindow keeps the worst). Unknown/absent keys
-// are simply skipped — nothing here hard-fails on a schema drift.
+// are simply skipped; nothing here hard-fails on a schema drift.
 
 import type { RateConstraint, WindowKey } from "@core/types";
 

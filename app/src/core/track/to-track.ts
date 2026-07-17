@@ -12,16 +12,16 @@
 // is legible at a glance. Exact figures live in the stats beside the track. The
 // mapping is monotonic non-decreasing and never returns NaN.
 
-import type { SegmentBound } from "../types";
-import { SEGMENT_OFFSETS, SEGMENTS } from "./segments";
+import type { ZoneBound } from "../types";
+import { ZONE_OFFSETS, ZONES } from "./zones";
 
-export const toTrack = (pct: number, bounds: SegmentBound[]): number => {
+export const toTrack = (pct: number, bounds: ZoneBound[]): number => {
   if (pct <= bounds[0].low) return 0;
   for (let i = 0; i < bounds.length; i++) {
     const { low, high } = bounds[i];
     if (pct <= high) {
       const fraction = high > low ? (pct - low) / (high - low) : 0;
-      return SEGMENT_OFFSETS[i] + fraction * SEGMENTS[i].width;
+      return ZONE_OFFSETS[i] + fraction * ZONES[i].width;
     }
   }
   return 100; // beyond the last real bound (>120) → far edge

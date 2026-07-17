@@ -1,4 +1,4 @@
-// percentile — the p-th percentile of a numeric sample, by linear interpolation
+// percentile: the p-th percentile of a numeric sample, by linear interpolation
 // between the two nearest ranks (the NIST / Excel PERCENTILE.INC method).
 //
 // Formula: sort ascending, rank = (p/100)·(n−1), then interpolate between the
@@ -6,7 +6,7 @@
 //
 // This is the one shared math primitive the calibration files lean on (median =
 // p50, calmRate = p10, profile = p75). It is a single generic function in its
-// own file — not a "utils" dumping ground — so it obeys the one-function-per-file
+// own file, not a "utils" dumping ground, so it obeys the one-function-per-file
 // rule while staying DRY. Empty input has no percentile → returns NaN, so every
 // caller must decide what "no data" means rather than silently getting 0.
 

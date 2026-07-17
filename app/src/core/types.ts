@@ -1,12 +1,12 @@
-// Shared domain types for Minuit. Pure data — zero runtime logic, zero I/O.
+// Shared domain types for Minuit. Pure data, zero runtime logic, zero I/O.
 //
 // These types are the lingua franca between two layers that never import each
 // other's internals: the calculation core (src/core/**) and the I/O adapters
 // (src/adapters/**), consumed by the Tauri frontend (src/components/**, src/pages/**).
 //
 // Multi-tool by construction: a `ToolId` only ever tells an *adapter* which
-// provider's files/endpoints to read. The calculation core never branches on it
-// — it only ever sees a `UsageEvent[]` and a `Pricing`, whatever the tool. That
+// provider's files/endpoints to read. The calculation core never branches on it;
+// it only ever sees a `UsageEvent[]` and a `Pricing`, whatever the tool. That
 // is what lets Codex / Gemini / Copilot be added later as new adapters, without
 // touching a single formula.
 
@@ -26,8 +26,11 @@ export interface WindowDef {
   seconds: number;
 }
 
-/** The six graduated states of the track, in track order. */
-export type ZoneId = "underuse" | "profitable" | "clear" | "warn" | "noreturn" | "over";
+/** The six graduated pace zones, slowest to fastest (also their track order).
+ *  This is the ONE canonical name for each zone: the same string is the zone id,
+ *  the display label (capitalized), and the CSS color token (`--pace-${id}`). No
+ *  parallel codename vocabulary — what you read here is what the UI shows. */
+export type ZoneId = "underfarming" | "coasting" | "maxxing" | "redlining" | "turbo" | "nitro";
 
 /**
  * A raw token breakdown for a single priced turn. Each tier is billed at a
@@ -54,7 +57,7 @@ export interface UsageEvent extends TokenUsage {
  * ACTIVE hours; `cacheHitRate` (0..1) is cacheRead / (cacheRead + input).
  */
 export interface TokenBreakdown extends TokenUsage {
-  total: number; // sum of all five tiers — cacheRead-dominated, shown apart in UI
+  total: number; // sum of all five tiers, cacheRead-dominated, shown apart in UI
   perHour: number; // FRESH tokens/hour (excl. cacheRead) on active hours, 0 when none
   cacheHitRate: number; // 0..1, share of context reads served from cache
 }
@@ -69,19 +72,22 @@ export interface ModelPrice {
 }
 
 /**
- * The pace-axis cut points, in units of `pace` (rate ÷ sustainable rate). The
- * clear/maxxing zone straddles pace 1; everything else is graded off it. Fixed
- * (not per-user) so the sweet spot is a stable target; see paceBounds.
+ * Pace cut points, in units of `pace` (rate ÷ sustainable rate). Each key is the
+ * pace at which you ENTER the zone it names, going up from `underfarming` (which
+ * starts at 0): so `maxxing: 0.85` means the sweet spot opens at pace 0.85, and
+ * `turbo: 1.5` means Turbo opens at 1.5. Reading a key tells you exactly which
+ * zone boundary it is — no `redline`-vs-`Redlining` trap. Fixed (not per-user)
+ * so the sweet spot is a stable target; see track/bounds.
  */
 export interface PaceThresholds {
-  underfarm: number; // below → "beaucoup trop lent"
-  slow: number; // below → "trop lent"
-  fast: number; // above → "trop vite"
-  redline: number; // above → "beaucoup trop vite"
-  blown: number; // above → past the cap trajectory ("over")
+  coasting: number; // enter Coasting (leave Underfarming)
+  maxxing: number; // enter Maxxing — the sweet spot opens
+  redlining: number; // enter Redlining (too fast)
+  turbo: number; // enter Turbo (well over sustainable)
+  nitro: number; // enter Nitro — past the cap trajectory
 }
 
-/** Everything editable when Anthropic changes plans/prices — see pricing.json. */
+/** Everything editable when Anthropic changes plans/prices; see pricing.json. */
 export interface Pricing {
   updated: string;
   models: Record<string, ModelPrice>;
@@ -92,14 +98,17 @@ export interface Pricing {
   subscriptionPeriodDays: number;
   ratioThresholds: { underuse: number; breakEven: number };
   projection: { lookbackWeeks: number };
-  /** Axis-2 pace speedometer: how far back the live burn looks, and the zone cut points. */
-  pace: { recentWindowHours: number; thresholds: PaceThresholds };
+  /** Axis-2 pace speedometer: just the zone cut points. Both smoothing windows
+   *  (live + smooth) are runtime UI prefs resolved per rate-limit window in
+   *  config.json and passed on GaugeInput, not economic constants — they live
+   *  outside pricing. */
+  pace: { thresholds: PaceThresholds };
 }
 
 /**
  * One rate-limit constraint from the /api/oauth/usage signal. A Max plan can
  * expose several at once (all-models weekly, Sonnet-only, …), so these are
- * always handled as an independent list — never a single value (see
+ * always handled as an independent list, never a single value (see
  * limits/bindingWindow).
  */
 export interface RateConstraint {
@@ -110,11 +119,11 @@ export interface RateConstraint {
   windowSeconds: number;
 }
 
-/** Back-compat alias — adapters historically called these "rate windows". */
+/** Back-compat alias: adapters historically called these "rate windows". */
 export type RateWindow = RateConstraint;
 
 export interface RateState {
-  capturedAt: number; // ms epoch — when the usage signal was fetched/cached
+  capturedAt: number; // ms epoch: when the usage signal was fetched/cached
   windows: RateConstraint[];
 }
 
@@ -126,15 +135,8 @@ export interface WindowSample {
   pctConsumed: number;
 }
 
-/** One observed active hour of consumption, in percent-of-cap per hour. */
-export interface HourObservation {
-  weekday: number; // 0..6 (0 = Sunday)
-  hour: number; // 0..23
-  ratePctPerHour: number;
-}
-
 /** A zone's interval on the driving axis (pace, or percent); may be empty when low === high. */
-export interface SegmentBound {
+export interface ZoneBound {
   id: ZoneId;
   low: number;
   high: number;
@@ -146,7 +148,7 @@ export interface SegmentBound {
 export interface GaugeInput {
   tool: ToolId;
   window: WindowKey;
-  now: number; // ms epoch — injected, never read from the clock inside core
+  now: number; // ms epoch: injected, never read from the clock inside core
   /** ms epoch when the live usage signal was observed; `now` when there is none.
    *  buildGauge advances currentPct with local burn since this moment (see livePct). */
   capturedAt: number;
@@ -158,15 +160,29 @@ export interface GaugeInput {
   constraints: RateConstraint[];
   /** Selected window length, used when there is no live signal to align to. */
   windowSeconds: number;
+  /** The OTHER live caps (not the selected window): used% + reset + $ burned +
+   *  length of each, so the pace can bind on the tightest wall with the right
+   *  active-hours factor per window (see limits/binding-rate, pace/active-hours). */
+  crossWindows: { usedPct: number; resetsAt: number; apiValue: number; windowSeconds: number }[];
+  /** Hours/day you work (~/.minuit config, default 24). Spreads the sustainable
+   *  rate over active hours instead of the wall clock; 24 = the neutral case. */
+  workHoursPerDay: number;
+  /** The LIVE pace window in hours, already resolved for the SELECTED rate-limit
+   *  window (~/.minuit `pace.readoutMinutes`, per-window). Shorter = nervier
+   *  needle/zone/center and usage projection; longer = calmer. */
+  readoutWindowHours: number;
+  /** The SMOOTH pace window in hours, resolved for the SELECTED window
+   *  (~/.minuit `pace.smoothMinutes`, per-window). The steady recent rhythm that
+   *  doesn't flatline between prompts. */
+  smoothWindowHours: number;
   calibration: {
     samples: WindowSample[]; // completed windows → dollarsPerPct
     instant: WindowSample; // fallback when samples is empty
-    activeHourRates: number[]; // active-hour %/h → habitualRate (the ghost pace)
   };
 }
 
 /**
- * The pure result of buildGauge — exactly what the Tauri frontend consumes.
+ * The pure result of buildGauge: exactly what the Tauri frontend consumes.
  * No rendering notions live here.
  */
 export interface GaugeReport {
@@ -174,19 +190,22 @@ export interface GaugeReport {
   window: WindowKey;
   // ── The speedometer (Axis 2, reframed as a pace) ──────────────────────────
   // pace = your rate ÷ the rate that lands you exactly at the cap at reset.
-  // 1 = maxxing. The needle reads recent burn; the ghost reads your habit.
-  pace: number; // needle: live/recent speed
-  habitualPace: number; // ghost: your typical speed
+  // 1 = maxxing. Two smoothings of the SAME metric, user-toggled: `pace` is the
+  // LIVE speed (readoutWindowHours) — nervous, eases to 0 when idle; `smoothPace`
+  // is the same pace over the longer smoothWindowHours — steady, your recent
+  // rhythm. Each carries its own zone.
+  pace: number; // live needle/zone/center (readoutWindowHours)
+  smoothPace: number; // smoothed needle/zone/center (smoothWindowHours)
   paceThresholds: PaceThresholds; // the zone cut points, so the UI can draw the bands
-  zone: ZoneId; // which named band the needle sits in (pace-driven; `over` when capped)
-  // The three rates behind the pace, in percent-of-cap per hour (for the hover).
-  recentRatePct: number; // live burn
-  habitualRatePct: number; // typical burn
+  zone: ZoneId; // the live pace's band (`nitro` when capped)
+  smoothZone: ZoneId; // the smoothed pace's band (`nitro` when capped)
+  // The rates behind the pace, in percent-of-cap per hour (for the hover).
+  smoothRatePct: number; // smoothed burn (smoothWindowHours)
   sustainableRatePct: number; // the maxxing rate (headroom ÷ time left)
   // Where the needle's speed lands you, and when it would hit the cap.
   currentPct: number; // raw usage: the reality bar under the speedometer
-  landingPct: number; // currentPct + recentRate × hoursUntilReset
-  hoursToCap: number; // hours to the cap at the recent rate; Infinity when idle
+  landingPct: number; // livePct + live (readout) rate × ACTIVE hours left (same horizon as pace)
+  hoursToCap: number; // hours to the cap at the live (readout) rate; Infinity when idle
   hoursUntilReset: number; // wall-clock hours until this window resets
   resetsAt: number; // ms epoch
   // ── The profitability flex (Axis 1, demoted to a badge) ───────────────────

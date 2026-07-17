@@ -1,5 +1,5 @@
 // ⚠️ The Axis-2 signal: GET /api/oauth/usage. Undocumented, unsupported,
-// community-identified — it may change schema or vanish. The actual HTTP call is
+// community-identified; it may change schema or vanish. The actual HTTP call is
 // done in native Rust (`fetch_usage` command) because the Anthropic org blocks
 // browser-origin/CORS requests; this module only invokes it, then caches and
 // parses. Any failure returns null → "signal unavailable".
@@ -11,7 +11,7 @@ import type { Credentials } from "./credentials";
 const CACHE_FILE = "usage-cache.json";
 const CACHE_TTL = 180_000;
 
-/** Full outcome of one live call — the diagnostic surface behind `doctor`. */
+/** Full outcome of one live call: the diagnostic surface behind `doctor`. */
 export interface UsageProbe {
   ok: boolean;
   status: number | null; // HTTP status, or null when the request threw
@@ -44,7 +44,7 @@ interface CachedUsage {
   body: unknown;
 }
 
-// One live probe that caches its outcome — success AND failure. Caching the 429
+// One live probe that caches its outcome, success AND failure. Caching the 429
 // too means the automatic reload path won't re-hit the endpoint for TTL, which
 // is what keeps a storm of app reloads from digging deeper into the rate-limit
 // bucket. The manual refresh button calls this directly to force a real retry.

@@ -2,7 +2,7 @@
 // keyboard event) and hide-on-blur (a focus event). Both read the same
 // `~/.minuit/config.json` the Rust side applies at launch, exposed via the
 // `get_config` command. Size / always-on-top / Dock / traffic lights are
-// applied natively at startup instead — see src-tauri/src/window.rs.
+// applied natively at startup instead; see src-tauri/src/window.rs.
 
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";

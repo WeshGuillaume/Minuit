@@ -1,6 +1,6 @@
-// tokenCost — the API-equivalent USD value of ONE priced turn's token breakdown.
+// tokenCost: the API-equivalent USD value of ONE priced turn's token breakdown.
 //
-// Formula (each tier billed separately, never pre-summed — the rates differ by
+// Formula (each tier billed separately, never pre-summed: the rates differ by
 // an order of magnitude):
 //   input·in + output·out + cacheRead·cr + cacheWrite5m·cw5 + cacheWrite1h·cw1
 // all divided by 1e6 because rates in pricing.json are USD per MILLION tokens.

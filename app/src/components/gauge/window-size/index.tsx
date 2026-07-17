@@ -1,7 +1,7 @@
 // Live WxH readout that surfaces only *while* the window is being resized, then
 // fades out shortly after the drag stops. The browser `resize` event fires
 // continuously during the drag, so we show on each tick and hide once they stop
-// coming (debounced). Pinned top-right — traffic lights own top-left.
+// coming (debounced). Pinned top-right - traffic lights own top-left.
 
 import { useWindowSize } from "./use-window-size";
 

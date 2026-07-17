@@ -1,9 +1,9 @@
-// windowBreakdown — aggregate the five token tiers over a window, plus the two
+// windowBreakdown: aggregate the five token tiers over a window, plus the two
 // derived signals the UI reads directly: throughput (tokens/hour) and cache hit
 // rate. Same fold-the-events shape as windowApiValue, but COUNTING tokens rather
 // than pricing them (dedup + windowing are already done upstream in the adapter).
 //
-// perHour is FRESH tokens (everything except cacheRead) over ACTIVE hours —
+// perHour is FRESH tokens (everything except cacheRead) over ACTIVE hours:
 // distinct clock-hours that carry at least one turn, not wall-clock elapsed, to
 // match hoursLeft's "at your working pace" basis (an idle afternoon must not
 // dilute the rate). cacheRead is excluded on purpose: it is re-read of already
@@ -13,7 +13,7 @@
 //
 // cacheHitRate = cacheRead / (cacheRead + input + cacheWrite): the share of all
 // input-side tokens that were served from cache. Cache CREATION tokens belong in
-// the denominator — they are input processed cold (a miss that is then stored),
+// the denominator; they are input processed cold (a miss that is then stored),
 // not a hit; leaving them out pins the rate at ~100%. This is the single biggest
 // lever on cost, and the anchor the future cache coach hangs its advice on.
 

@@ -1,53 +1,22 @@
-// The gauge center. It toggles on click between two readouts of the same live
-// state: the pace multiplier (default: 1.2× over the verdict REDLINING) and raw
-// throughput (tok/h). The choice is persisted (localStorage). The time-to-reset
-// is deliberately NOT a mode here; it already lives in the usage bar below.
+// The gauge center: the big number + its caption, cycling on click through the
+// pace smoothings (live ↔ smooth). The mode is shared state: the scale ticks
+// re-label in lockstep (see modes/context.tsx, speedo-dial.tsx), so this only
+// renders the current mode's readout and delegates the cycle to the context.
 //
 // The value swaps through AnimatePresence; the sub-label carries a slow
 // letter-by-letter shimmer (ShimmerText). Honest fallback: no live signal (or a
-// hit cap, where pace collapses to a meaningless 0×) shows a dash, not a number.
+// hit cap / idle burn) shows a dash from the mode itself, not a fake number.
 
-import { SEGMENTS } from "@core/track/segments";
 import type { GaugeReport } from "@core/types";
 import { RefreshCw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { NumberFlow } from "@/components/ui/number-flow";
 import { cn } from "@/lib/utils";
-import { ShimmerText } from "../shimmer-text";
+import { LiveIndicator } from "../live-indicator";
+import { useGaugeMode } from "../modes/context";
+import { ShimmerText, type ShimmerTone } from "../shimmer-text";
 import { useSignalRefresh } from "../use-signal-refresh";
-
-const ZONE_LABEL = Object.fromEntries(SEGMENTS.map((s) => [s.id, s.label])) as Record<
-  string,
-  string
->;
-const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
-
-type Mode = "pace" | "rate";
-
-// Signal is guaranteed live here (no-signal is handled by SignalCenter upstream);
-// the only special case left is a hit cap, where pace collapses to a bare 0×.
-const MODES: Record<
-  Mode,
-  { value: (r: GaugeReport) => string; caption: (r: GaugeReport) => string }
-> = {
-  pace: {
-    value: (r) => (r.currentPct >= 100 ? "—" : `${r.pace.toFixed(1)}×`),
-    caption: (r) => ZONE_LABEL[r.zone],
-  },
-  rate: {
-    value: (r) => (r.tokens.perHour > 0 ? compact.format(r.tokens.perHour) : "—"),
-    caption: () => "tok/h",
-  },
-};
-
-const ORDER: Mode[] = ["pace", "rate"];
-const nextMode = (m: Mode): Mode => ORDER[(ORDER.indexOf(m) + 1) % ORDER.length];
-
-const MODE_STORAGE_KEY = "minuit:center-mode";
-const loadMode = (): Mode => {
-  const saved = localStorage.getItem(MODE_STORAGE_KEY);
-  return saved && (ORDER as string[]).includes(saved) ? (saved as Mode) : "pace";
-};
+import { zoneTone } from "../zone-tone";
 
 const spring = { type: "spring", stiffness: 550, damping: 32 } as const;
 // Never hidden, just ever smaller: text-xs below dial-interactive (the
@@ -56,27 +25,25 @@ const spring = { type: "spring", stiffness: 550, damping: 32 } as const;
 const VALUE_CLASS =
   "text-xs font-normal tabular-nums text-foreground @dial-interactive/dial:text-lg @dial-captioned/dial:text-2xl";
 
-function PopValue({ value, className }: { value: string; className: string }) {
-  return (
-    <AnimatePresence mode="popLayout" initial={false}>
-      <motion.span
-        key={value}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={spring}
-        className={cn("inline-block", className)}
-      >
-        {value}
-      </motion.span>
-    </AnimatePresence>
-  );
-}
+// The pace multiple is always shown to one decimal; NumberFlow rolls the digits
+// on every recompute AND on the live↔smooth mode swap.
+const PACE_FORMAT: Intl.NumberFormatOptions = {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+};
 
 // Mode-swap slide, with the shimmering text inside so the label stays alive. The
 // layout class rides the swap wrapper (the flex item); the letters inherit its
 // colour/size/tracking and only add the shimmer.
-function ShimmerValue({ value, className }: { value: string; className: string }) {
+function ShimmerValue({
+  value,
+  className,
+  tone,
+}: {
+  value: string;
+  className: string;
+  tone: ShimmerTone;
+}) {
   return (
     <AnimatePresence mode="popLayout" initial={false}>
       <motion.span
@@ -87,31 +54,49 @@ function ShimmerValue({ value, className }: { value: string; className: string }
         transition={spring}
         className={cn("inline-block", className)}
       >
-        <ShimmerText text={value} />
+        <ShimmerText text={value} tone={tone} />
       </motion.span>
     </AnimatePresence>
   );
 }
 
-// The center while a gauge region is hovered: that zone's pace range.
-export function RegionRange({ low, high }: { low: number; high: number }) {
+// The center while a gauge region is hovered: that zone's pace range, with the
+// zone's own name shimmering underneath (Maxxing, Redlining, …).
+export function RegionRange({
+  low,
+  high,
+  name,
+  tone,
+}: {
+  low: number;
+  high: number;
+  name: string;
+  tone: ShimmerTone;
+}) {
   const label = `${low.toFixed(2)}–${high.toFixed(2)}×`;
   return (
-    <span className="grid place-items-center [&>*]:[grid-area:1/1]">
-      <AnimatePresence initial={false}>
-        <motion.span
-          key={label}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={spring}
-          className={cn(
-            "whitespace-nowrap text-sm font-normal tabular-nums text-foreground @dial-captioned/dial:text-base",
-          )}
-        >
-          {label}
-        </motion.span>
-      </AnimatePresence>
+    <span className="flex flex-col items-center leading-none">
+      <span className="grid place-items-center [&>*]:[grid-area:1/1]">
+        <AnimatePresence initial={false}>
+          <motion.span
+            key={label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={spring}
+            className={cn(
+              "whitespace-nowrap text-sm font-normal tabular-nums text-foreground @dial-captioned/dial:text-base",
+            )}
+          >
+            {label}
+          </motion.span>
+        </AnimatePresence>
+      </span>
+      <ShimmerValue
+        value={name}
+        tone={tone}
+        className="mt-1 hidden whitespace-nowrap text-[10px] font-medium uppercase tracking-wide text-muted-foreground @dial-captioned/dial:block"
+      />
     </span>
   );
 }
@@ -147,27 +132,34 @@ export function GaugeCenter({
   report: GaugeReport;
   onRefreshed?: () => void;
 }) {
-  const [mode, setMode] = useState<Mode>(loadMode);
+  const { mode, cycle } = useGaugeMode();
 
   if (!report.signalAvailable) return <SignalCenter onRefreshed={onRefreshed} />;
 
-  const toggle = () => {
-    const next = nextMode(mode);
-    localStorage.setItem(MODE_STORAGE_KEY, next);
-    setMode(next);
-  };
-
-  const m = MODES[mode];
   return (
     <button
       type="button"
       className="pointer-events-auto flex cursor-pointer flex-col items-center leading-none border-none bg-transparent p-0"
-      onClick={toggle}
+      onClick={cycle}
     >
-      <PopValue value={m.value(report)} className={VALUE_CLASS} />
+      {mode.id === "live" && (
+        // Kept at every dial size (it shrinks rather than hides on small dials,
+        // see live-indicator.tsx): the live cue matters most exactly where the
+        // dial is small and glanceable, so it stays even when the caption drops.
+        <span className="mb-0.5 flex">
+          <LiveIndicator />
+        </span>
+      )}
+      <NumberFlow
+        value={mode.centerNumber(report)}
+        suffix={mode.centerSuffix}
+        format={PACE_FORMAT}
+        className={VALUE_CLASS}
+      />
       <ShimmerValue
-        value={m.caption(report)}
-        className="mt-1 hidden text-[10px] font-medium uppercase tracking-wide text-muted-foreground @dial-captioned/dial:block"
+        value={mode.centerCaption(report)}
+        tone={zoneTone(mode.zone(report))}
+        className="mt-2.5 hidden text-[10px] font-medium uppercase tracking-wide text-muted-foreground @dial-captioned/dial:block"
       />
     </button>
   );

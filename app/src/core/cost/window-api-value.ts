@@ -1,10 +1,10 @@
-// windowApiValue — total API-equivalent USD value of every turn in a window.
+// windowApiValue: total API-equivalent USD value of every turn in a window.
 //
 // Formula: Σ tokenCost(event, price(event.model)) over the (already windowed and
 // uuid-deduped) events. This USD figure is the common currency of both axes:
 // Axis 1 compares it to the subscription, Axis 2 calibrates $/percent from it.
 //
-// Assumption: dedup and windowing happen upstream in the adapter — this file
+// Assumption: dedup and windowing happen upstream in the adapter; this file
 // trusts the event list it is handed and only prices it. Model → family
 // resolution is a private lookup here (not its own quantity): a model id that
 // matches no pattern falls back to the last family in pricing.match.
