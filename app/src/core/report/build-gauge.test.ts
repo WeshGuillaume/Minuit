@@ -92,15 +92,25 @@ describe("buildGauge (speedometer orchestration)", () => {
     expect(r.smoothZone).toBe(r.zone);
   });
 
-  it("drops the LIVE pace to 0 when idle while SMOOTH still remembers the burn", () => {
-    // The only event is 30 min old; a 36-second readout window sees nothing, so
-    // the live pace (and its zone) ease to 0, while the smooth pace — on the 1h
-    // window — still holds. This is exactly the live-vs-smooth split, made explicit.
-    const idle = buildGauge({ ...input, readoutWindowHours: 0.01 });
-    expect(idle.pace).toBe(0); // live needle/zone/center drop together
+  it("floors the LIVE pace to the smooth rhythm while warming up (empty live window, active smooth)", () => {
+    // The only event is 30 min old; a 36-second readout window sees nothing. Rather
+    // than assert a dishonest 0×/underfarming mid-session, the live pace borrows the
+    // smooth rhythm (still held on the 1h window) and flags `measuring`.
+    const warming = buildGauge({ ...input, readoutWindowHours: 0.01 });
+    expect(warming.measuring).toBe(true);
+    expect(warming.pace).toBeCloseTo(r.pace, 6); // live borrows smooth, not 0
+    expect(warming.zone).toBe(warming.smoothZone); // and its zone, not "underfarming"
+    expect(warming.smoothPace).toBeCloseTo(r.pace, 6); // smooth window unchanged → holds
+    expect(warming.smoothZone).toBe("coasting");
+  });
+
+  it("drops the LIVE pace to 0/underfarming only once the SMOOTH window drains too (idle)", () => {
+    // Both windows shrunk past the 30-min-old event: nothing to read anywhere, so
+    // it's genuinely idle — no warming-up stand-in, an honest 0×.
+    const idle = buildGauge({ ...input, readoutWindowHours: 0.01, smoothWindowHours: 0.01 });
+    expect(idle.measuring).toBe(false);
+    expect(idle.pace).toBe(0);
     expect(idle.zone).toBe("underfarming");
-    expect(idle.smoothPace).toBeCloseTo(r.pace, 6); // smooth window unchanged → holds
-    expect(idle.smoothZone).toBe("coasting");
   });
 
   it("projects where the live pace lands you at reset", () => {

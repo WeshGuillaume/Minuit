@@ -45,6 +45,7 @@ export interface DemoScenario {
   currentPct: number; // raw usage anchor under the dial
   resetFraction: number; // share of the window still left before reset (0..1)
   activeHours: number; // active hours of work over a 7-day window (scaled per window)
+  measuring?: boolean; // warming up: live window empty, pace stands in with the smooth rhythm
 }
 
 // pace values sit clearly inside each band (cuts at 0.5 / 0.85 / 1.15 / 1.5 / 2.0,
@@ -109,6 +110,20 @@ export const SCENARIOS: readonly DemoScenario[] = [
     currentPct: 100,
     resetFraction: 0.18,
     activeHours: 76,
+  },
+  {
+    // Fresh window, prompts running but nothing priced in the live window yet: the
+    // needle borrows the smooth rhythm (maxxing) and the live caption reads
+    // "Warming up" instead of a dishonest 0×/underfarming. See core/modes/multiplier.
+    id: "warming",
+    key: "7",
+    label: "Warming up",
+    zone: "maxxing",
+    pace: 1.0,
+    currentPct: 8,
+    resetFraction: 0.87,
+    activeHours: 20,
+    measuring: true,
   },
 ];
 
@@ -176,6 +191,7 @@ const toReport = (s: DemoScenario, tool: ToolId, window: WindowKey): GaugeReport
     tokens,
     calibrated: true,
     signalAvailable: true,
+    measuring: s.measuring ?? false,
   };
 };
 

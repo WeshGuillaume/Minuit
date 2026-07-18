@@ -44,7 +44,12 @@ export function ShimmerText({
     // Boost tones (Turbo/Nitro) also italicize, to set the hot zones apart from
     // the upright neutral labels beyond just their hue.
     <span className={cn(className, colors && "italic")} aria-hidden>
-      {colors && <Flame className="mr-1 inline-block size-[1em] -translate-y-px" style={{ color: colors[0] }} />}
+      {colors && (
+        <Flame
+          className="mr-1 inline-block size-[1em] -translate-y-px"
+          style={{ color: colors[0] }}
+        />
+      )}
       {chars.map((ch, i) => (
         <motion.span
           // biome-ignore lint/suspicious/noArrayIndexKey: chars is derived fresh from `text` every render, never reordered; index is a stable key here.
@@ -69,7 +74,10 @@ export function ShimmerText({
             delay: i * STAGGER,
           }}
         >
-          {ch === " " ? " " : ch}
+          {/* A plain space inside an inline-block collapses to zero width, welding
+              multi-word labels together ("Warming up" → "Warmingup"); a non-
+              breaking space keeps its width and the words apart. */}
+          {ch === " " ? " " : ch}
         </motion.span>
       ))}
     </span>

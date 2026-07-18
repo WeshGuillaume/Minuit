@@ -21,7 +21,12 @@ export type AxisMode = "broken" | "linear";
 // Minutes. Live = the needle's responsiveness; smooth = the steady "recent
 // rhythm" that doesn't flatline between prompts. Both scale up for the weekly
 // cap, whose sustainable rate is spread over days, not hours.
-const DEFAULT_READOUT_MIN: Record<WindowKey, number> = { five_hour: 2, seven_day: 20 };
+// five_hour = 6, not 2: a single Opus turn (tool loops) can take minutes and
+// only lands in the jsonl once it FINISHES, so a 2-min window sits empty between
+// turns and reads a dishonest 0×. 6 min keeps the last turn in view long enough
+// to bridge the gap; the `measuring` fallback (core/modes/multiplier) covers what
+// still slips through, e.g. right after a reset.
+const DEFAULT_READOUT_MIN: Record<WindowKey, number> = { five_hour: 6, seven_day: 20 };
 const DEFAULT_SMOOTH_MIN: Record<WindowKey, number> = { five_hour: 30, seven_day: 240 };
 const MAX_READOUT_MIN = 240; // 4h: past this the "live" needle isn't live anymore
 const MAX_SMOOTH_MIN = 1440; // 24h: a full day of smoothing is the sane ceiling

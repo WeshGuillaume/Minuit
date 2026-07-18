@@ -58,6 +58,7 @@ const mock = (over: Partial<GaugeReport>): GaugeReport => {
     },
     calibrated: true,
     signalAvailable: true,
+    measuring: false,
     ...over,
   };
 };

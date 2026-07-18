@@ -193,7 +193,8 @@ export interface GaugeReport {
   // 1 = maxxing. Two smoothings of the SAME metric, user-toggled: `pace` is the
   // LIVE speed (readoutWindowHours) — nervous, eases to 0 when idle; `smoothPace`
   // is the same pace over the longer smoothWindowHours — steady, your recent
-  // rhythm. Each carries its own zone.
+  // rhythm. Each carries its own zone. When `measuring` (see below), `pace`/`zone`
+  // borrow the smooth rhythm rather than reading a dishonest 0× mid-sprint.
   pace: number; // live needle/zone/center (readoutWindowHours)
   smoothPace: number; // smoothed needle/zone/center (smoothWindowHours)
   paceThresholds: PaceThresholds; // the zone cut points, so the UI can draw the bands
@@ -217,4 +218,8 @@ export interface GaugeReport {
   tokens: TokenBreakdown; // I/O + cache mix; independent of the axes
   calibrated: boolean; // dollarsPerPct came from history, not the instant
   signalAvailable: boolean; // the OAuth usage signal was reachable
+  // Live window has no priced burn yet but the smooth window shows activity: the
+  // live pace/zone above are standing in with the smooth rhythm (warming up), not
+  // asserting a real 0×/underfarming. See core/modes/multiplier.
+  measuring: boolean;
 }

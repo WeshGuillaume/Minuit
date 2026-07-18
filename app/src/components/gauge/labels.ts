@@ -25,4 +25,5 @@ export const FIELD_LABELS: Record<keyof GaugeReport, string> = {
   tokens: "Token breakdown",
   calibrated: "Calibrated",
   signalAvailable: "Signal available",
+  measuring: "Warming up",
 };

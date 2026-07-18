@@ -142,14 +142,14 @@ export function GaugeCenter({
       className="pointer-events-auto flex cursor-pointer flex-col items-center leading-none border-none bg-transparent p-0"
       onClick={cycle}
     >
-      {mode.id === "live" && (
-        // Kept at every dial size (it shrinks rather than hides on small dials,
-        // see live-indicator.tsx): the live cue matters most exactly where the
-        // dial is small and glanceable, so it stays even when the caption drops.
-        <span className="mb-0.5 flex">
-          <LiveIndicator />
-        </span>
-      )}
+      {/* Kept at every dial size (it shrinks rather than hides on small dials,
+          see live-indicator.tsx): the live cue matters most exactly where the
+          dial is small and glanceable, so it stays even when the caption drops.
+          Off in Smooth mode: the bolt itself stays put, just unlit (see
+          live-indicator.tsx) rather than disappearing. */}
+      <span className="mb-0.5 flex">
+        <LiveIndicator active={mode.id === "live"} />
+      </span>
       <NumberFlow
         value={mode.centerNumber(report)}
         suffix={mode.centerSuffix}

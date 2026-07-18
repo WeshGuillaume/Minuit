@@ -32,16 +32,43 @@ describe("paceValue", () => {
 describe("multiplierFields", () => {
   it("derives live + smooth pace and each zone from the rates", () => {
     const f = multiplierFields({
-      liveRatePct: 0, // idle right now → live pace drops
-      smoothRatePct: 1, // but the last while averaged maxxing
+      liveRatePct: 0.5, // live burn present, below maxxing
+      smoothRatePct: 1, // the last while averaged maxxing
       sustainableRatePct: 1,
       livePct: 50,
       bounds,
     });
-    expect(f.pace).toBe(0); // live: idle → needle at 0
-    expect(f.zone).toBe("underfarming"); // live zone drops with it, no contradiction
+    expect(f.measuring).toBe(false); // live window has its own reading
+    expect(f.pace).toBeCloseTo(0.5, 6); // live: reads its own rate
+    expect(f.zone).toBe("coasting"); // live zone follows the live pace
     expect(f.smoothPace).toBeCloseTo(1, 6); // smooth: 1 / 1 = maxxing
     expect(f.smoothZone).toBe("maxxing"); // smooth zone follows the smoothed pace
+  });
+
+  it("warming up: empty live window but active → live pace borrows the smooth rhythm", () => {
+    const f = multiplierFields({
+      liveRatePct: 0, // nothing priced in the live window yet (between long turns)
+      smoothRatePct: 1, // but the smooth window shows you're maxxing
+      sustainableRatePct: 1,
+      livePct: 50,
+      bounds,
+    });
+    expect(f.measuring).toBe(true);
+    expect(f.pace).toBeCloseTo(1, 6); // borrows the smooth rhythm, NOT a dishonest 0×
+    expect(f.zone).toBe("maxxing"); // and its zone, not "underfarming"
+  });
+
+  it("genuinely idle: live AND smooth both empty → drops to 0/underfarming", () => {
+    const f = multiplierFields({
+      liveRatePct: 0,
+      smoothRatePct: 0, // smooth window drained too → not warming up, just idle
+      sustainableRatePct: 1,
+      livePct: 50,
+      bounds,
+    });
+    expect(f.measuring).toBe(false);
+    expect(f.pace).toBe(0); // honest: you really have stopped
+    expect(f.zone).toBe("underfarming");
   });
 
   it("forces BOTH zones to capped once live usage hits 100%, whatever the pace", () => {

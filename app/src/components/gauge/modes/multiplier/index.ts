@@ -13,6 +13,11 @@ import type { GaugeMode, ModeId } from "../types";
 
 const ZONE_LABEL = Object.fromEntries(ZONES.map((z) => [z.id, z.label])) as Record<ZoneId, string>;
 
+// Warming up: the live pace/zone are borrowing the smooth rhythm because the live
+// window has nothing priced yet (see core/modes/multiplier). Only the live mode
+// says so — the smooth mode IS the steady rhythm, it never stands in for itself.
+const WARMING_UP = "Warming up";
+
 // Capped: the sustainable rate is 0, so the raw pace collapses to a meaningless
 // 0×. Never show that (or a placeholder dash — see CLAUDE.md); peg the readout to
 // the dial's far edge instead, matching the needle (pinned to max) and the Nitro
@@ -34,5 +39,6 @@ export const buildMultiplierMode = (
   zone: pick.zone,
   centerNumber: (r: GaugeReport) => displayPace(pick, r),
   centerSuffix: "×",
-  centerCaption: (r: GaugeReport) => ZONE_LABEL[pick.zone(r)],
+  centerCaption: (r: GaugeReport) =>
+    id === "live" && r.measuring ? WARMING_UP : ZONE_LABEL[pick.zone(r)],
 });

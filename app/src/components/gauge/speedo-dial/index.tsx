@@ -48,7 +48,10 @@ const ZONE_SWEEP_MS = 260; // total stagger across a hovered zone's ticks
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
-const ZONE_BY_ID = Object.fromEntries(ZONES.map((z) => [z.id, z])) as Record<ZoneId, Zone>;
+const ZONE_BY_ID = Object.fromEntries(ZONES.map((z) => [z.id, z])) as Record<
+  ZoneId,
+  Zone
+>;
 
 // Shape/behaviour invariants true regardless of how the caller sizes the dial;
 // the actual width formula is the caller's (see gauge-page.tsx). No aspect-*
@@ -81,7 +84,9 @@ export function SpeedoDial({
   const bands = mode.bands(report, ctx);
 
   const bandAt = (fraction: number) => pickBand(bands, fraction * 100);
-  const hoveredBound = hovered ? (bounds.find((b) => b.id === hovered) ?? null) : null;
+  const hoveredBound = hovered
+    ? (bounds.find((b) => b.id === hovered) ?? null)
+    : null;
 
   // Position of a tick within the hovered zone (0 at its low, 1 at its high),
   // used both to isolate the zone and to stagger its ticks into a sweep.
@@ -122,10 +127,12 @@ export function SpeedoDial({
       scaleLabels={hovered ? undefined : marks.map((m) => m.pos)}
       // RadialGauge hands back the exact label value, so match on it; a fuzzy
       // tolerance mismatches on tight axes (linear pace marks sit 0.5 apart).
-      formatLabel={(v) => marks.find((m) => Math.abs(m.pos - v) < 1e-6)?.text ?? ""}
-      compactTickCount={24}
-      compactTickLength={24}
-      compactTickWidth={3}
+      formatLabel={(v) =>
+        marks.find((m) => Math.abs(m.pos - v) < 1e-6)?.text ?? ""
+      }
+      compactTickCount={46}
+      compactTickLength={18}
+      compactTickWidth={1.5}
       compactTickRadius={100}
       centerLabel={
         // Always shown: there's no size too small for the number itself, it
