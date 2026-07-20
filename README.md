@@ -29,7 +29,7 @@ closer. Minuit draws that line and helps you ride it.
 
 <div align="center">
 
-<img src="assets/weekly-maxxing.png" alt="Minuit weekly view at maxxing" width="340" />
+<img src="assets/default.png" alt="Minuit" width="340" />
 
 </div>
 
