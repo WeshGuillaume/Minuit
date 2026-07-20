@@ -80,8 +80,9 @@ Grab the latest signed build from the
 3. Launch it. Minuit picks up your existing Claude Code usage automatically,
    with no sign-in and no setup.
 
-Minuit ships with an over-the-air updater, so once installed it keeps itself
-current.
+Minuit ships with an over-the-air updater, **off by default**. Turn it on with
+`update.auto` in `config.json` (see [Configuration](#configuration)) and it
+keeps itself current; leave it off and Minuit never phones home for releases.
 
 Currently macOS only. The app is a lightweight [Tauri](https://tauri.app) build
 (Rust plus web), so Windows and Linux support is feasible and contributions are
@@ -149,6 +150,7 @@ so you can just edit them — no schema to look up. Two files matter:
   "showInDock": false,
   "work": { "hoursPerDay": 8 },
   "display": { "paceAxis": "broken" },
+  "update": { "auto": false },
   "pace": {
     "readoutMinutes": { "five_hour": 2, "seven_day": 20 },
     "smoothMinutes": { "five_hour": 30, "seven_day": 240 }
@@ -167,6 +169,7 @@ so you can just edit them — no schema to look up. Two files matter:
 | `showInDock`                   | `true`          | Show Minuit in the Dock and Cmd+Tab switcher. Set to `false` for a background app.                                                       |
 | `work.hoursPerDay`             | `24`            | Hours per day you actually work, `0 < h ≤ 24`. Anchors the sustainable rate to your real working hours instead of the wall clock; 24 spreads it round-the-clock. |
 | `display.paceAxis`             | `"broken"`      | Pace dial scale: `"broken"` (fixed track, maxxing reads big and central) or `"linear"` (true-proportion axis).                          |
+| `update.auto`                  | `false`         | Opt-in over-the-air auto-update. When `false`, Minuit never checks for or installs releases — on an open-source app, silently pulling and running a signed build is your call. Set `true` to have it self-update on launch. |
 | `pace.readoutMinutes`          | `{5h: 2, 7d: 20}` | How far back the **live** needle looks, in minutes, per rate-limit window. Shorter = nervier. Accepts a single number (applies to both windows) or `{ five_hour, seven_day }`. Clamped `0 < m ≤ 240`. |
 | `pace.smoothMinutes`           | `{5h: 30, 7d: 240}` | How far back the **smooth** pace looks, in minutes, per window — the steady recent rhythm that doesn't flatline between prompts. Same scalar-or-object shape. Clamped `0 < m ≤ 1440`. |
 
