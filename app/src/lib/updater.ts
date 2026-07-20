@@ -3,6 +3,10 @@
  * Releases latest.json; if a signed version exists, it's downloaded,
  * installed, and relaunched automatically, with no user action. In dev / outside
  * Tauri, `check()` fails silently → phase "none".
+ *
+ * Opt-in: gated behind `enabled` (from `update.auto` in config, off by default).
+ * When disabled we never touch the network and stay in phase "none" — on an
+ * open-source app, silently pulling and running a release is the user's call.
  */
 
 import { relaunch } from "@tauri-apps/plugin-process";
@@ -15,10 +19,15 @@ export type UpdaterState =
   | { phase: "downloading"; version: string; percent: number }
   | { phase: "relaunching" };
 
-export function useUpdater() {
+export function useUpdater(enabled: boolean) {
   const [state, setState] = useState<UpdaterState>({ phase: "checking" });
 
   useEffect(() => {
+    if (!enabled) {
+      setState({ phase: "none" });
+      return;
+    }
+
     let active = true;
 
     check()
@@ -51,7 +60,7 @@ export function useUpdater() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [enabled]);
 
   return { state };
 }

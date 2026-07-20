@@ -32,6 +32,10 @@ const MAX_READOUT_MIN = 240; // 4h: past this the "live" needle isn't live anymo
 const MAX_SMOOTH_MIN = 1440; // 24h: a full day of smoothing is the sane ceiling
 
 export interface MinuitConfig {
+  /** OTA auto-update. Off by default: on an open-source app, silently pulling
+   *  and running a signed release is a supply-chain risk the user should opt
+   *  into. Enable via `update.auto: true`. */
+  autoUpdate: boolean;
   /** Hours per day you actually work, 0 < h ≤ 24. Anchors sustainableRate. */
   workHoursPerDay: number;
   /** Pace dial axis (both smoothing modes share it). */
@@ -50,6 +54,7 @@ const toHours = (perWindow: Record<WindowKey, number>): Record<WindowKey, number
 });
 
 const DEFAULT_CONFIG: MinuitConfig = {
+  autoUpdate: false,
   workHoursPerDay: 24,
   paceAxis: "broken",
   readoutWindowHours: toHours(DEFAULT_READOUT_MIN),
@@ -84,6 +89,7 @@ export const loadConfig = async (): Promise<MinuitConfig> => {
   try {
     const raw = JSON.parse(await readTextFile(await gaugePath("config.json")));
     return {
+      autoUpdate: raw?.update?.auto === true,
       workHoursPerDay: validHours(raw?.work?.hoursPerDay) ? raw.work.hoursPerDay : 24,
       paceAxis: axisOr(raw?.display?.paceAxis, "broken"),
       readoutWindowHours: perWindowHours(

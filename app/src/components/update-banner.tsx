@@ -5,10 +5,24 @@
  */
 
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { loadConfig } from "@/adapters/config";
 import { useUpdater } from "@/lib/updater";
 
 export function UpdateBanner() {
-  const { state } = useUpdater();
+  const [autoUpdate, setAutoUpdate] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    loadConfig().then((c) => {
+      if (live) setAutoUpdate(c.autoUpdate);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const { state } = useUpdater(autoUpdate);
 
   if (state.phase === "downloading") {
     return (
