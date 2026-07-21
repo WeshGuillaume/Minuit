@@ -16,9 +16,25 @@ describe("fuelData", () => {
     // genuinely survives to reset, so its own tick should read as safe.
     const d = fuelData(report({ currentPct: 62 }), 87, 60);
     expect(d.projectedActiveTick).toBeGreaterThanOrEqual(0);
+    // Readout is fuel-left framed (13% left), the complement of 87% used, so it
+    // agrees with the "% left" level rather than flipping to a usage figure.
+    expect(d.fuelLeftAtLanding).toBeCloseTo(13, 6);
     const colors = fuelTickColors(d);
     expect(colors.activeColor({ index: 0 } as never)).toBe(d.color); // still safe
     expect(d.willCapBeforeReset).toBe(false);
+    // Landing at ≥0 fuel (no overshoot) is maxxing, not danger: drain band and
+    // pump read neutral white, never red.
+    expect(d.drainColor).toBe("var(--foreground)");
+    expect(d.dry).toBe(false);
+  });
+
+  it("reddens the drain band and pump only on overshoot (target fuel < 0)", () => {
+    // 130% raw landing: runs dry 10h before the 40h reset — you overshoot the
+    // cap, the one case that warrants red.
+    const d = fuelData(report({ currentPct: 62 }), 130, 10);
+    expect(d.willCapBeforeReset).toBe(true);
+    expect(d.drainColor).toBe("var(--destructive)");
+    expect(d.dry).toBe(true);
   });
 
   it("pulls EVERY lit tick, including index 0, into the drain band on a total drain", () => {

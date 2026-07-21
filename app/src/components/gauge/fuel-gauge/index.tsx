@@ -40,24 +40,26 @@ function FuelPercent({
   );
 }
 
-/** Where the current rate lands usage by reset, with the reset ETA folded into
- * one line ("62% by reset (1j16h)") instead of a separate "Reset …" caption -
- * shorter, and doesn't repeat "reset" twice. Falls back to the plain ETA when
- * there's no signal to project a landing from (never a dash).
+/** How much fuel is left by reset if the rate holds, framed like the "% left"
+ * level above it (NOT the opposite usage convention) so the two numbers agree:
+ * "11% left by reset (3h16)". The reset ETA is folded into the one line instead
+ * of a separate "Reset …" caption - shorter, and doesn't repeat "reset" twice.
+ * Falls back to the plain ETA when there's no signal to project from (never a
+ * dash).
  *
- * When the raw (unclamped) landing blows past 100% before reset actually
- * arrives, "N% by reset (ETA)" would lie - reading as "you coast to N% right
- * at reset" when really you run dry well before it. Swap the headline number
- * for the real event ("0% by {time to empty}") and demote reset to a nudged
- * aside, so the two times aren't confused for one. */
+ * When the raw (unclamped) landing blows past empty before reset actually
+ * arrives, "N% left by reset (ETA)" would lie - reading as "you coast to N%
+ * right at reset" when really you run dry well before it. Swap the headline
+ * number for the real event ("0% left by {time to empty}") and demote reset to
+ * a nudged aside, so the two times aren't confused for one. */
 function LandingCaption({
-  landingUsagePct,
+  fuelLeftAtLanding,
   hoursUntilReset,
   willCapBeforeReset,
   hoursToCap,
   signalAvailable,
 }: {
-  landingUsagePct: number;
+  fuelLeftAtLanding: number;
   hoursUntilReset: number;
   willCapBeforeReset: boolean;
   hoursToCap: number;
@@ -70,13 +72,13 @@ function LandingCaption({
   if (willCapBeforeReset) {
     return (
       <span className="whitespace-nowrap text-[10px] text-muted-foreground/70">
-        <NumberFlow value={0} suffix={`% by ${formatEta(hoursToCap)} (reset ${resetEta})`} />
+        <NumberFlow value={0} suffix={`% left by ${formatEta(hoursToCap)} (reset ${resetEta})`} />
       </span>
     );
   }
   return (
     <span className="whitespace-nowrap text-[10px] text-muted-foreground/70">
-      <NumberFlow value={Math.round(landingUsagePct)} suffix={`% by reset (${resetEta})`} />
+      <NumberFlow value={Math.round(fuelLeftAtLanding)} suffix={`% left by reset (${resetEta})`} />
     </span>
   );
 }
@@ -90,7 +92,7 @@ function FuelColumn({ data }: { data: FuelData }) {
       <div className="flex flex-col items-center gap-0.5 [@container_stack_(max-height:54px)]:hidden">
         <FuelPercent fuelLeft={data.fuelLeft} signalAvailable={data.signalAvailable} />
         <LandingCaption
-          landingUsagePct={data.landingUsagePct}
+          fuelLeftAtLanding={data.fuelLeftAtLanding}
           hoursUntilReset={data.hoursUntilReset}
           willCapBeforeReset={data.willCapBeforeReset}
           hoursToCap={data.hoursToCap}
@@ -112,7 +114,7 @@ function FuelRow({ data }: { data: FuelData }) {
         <FuelPercent fuelLeft={data.fuelLeft} signalAvailable={data.signalAvailable} />
       </div>
       <LandingCaption
-        landingUsagePct={data.landingUsagePct}
+        fuelLeftAtLanding={data.fuelLeftAtLanding}
         hoursUntilReset={data.hoursUntilReset}
         willCapBeforeReset={data.willCapBeforeReset}
         hoursToCap={data.hoursToCap}

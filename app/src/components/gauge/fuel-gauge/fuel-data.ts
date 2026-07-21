@@ -33,9 +33,13 @@ export interface FuelData {
   /** Index the frontier retreats to by reset at the current rate; equals
    * `lastActiveTick` when there's no live projection. */
   projectedActiveTick: number;
-  /** Usage % this same rate lands you at by reset, clamped to [0, 100] — the
-   * "N% by reset" readout. Mirrors `fuelAtLanding` (its fuel-space complement). */
+  /** Usage % this same rate lands you at by reset, clamped to [0, 100]. Kept
+   * for the tick math; the readout shows its fuel-space complement instead. */
   landingUsagePct: number;
+  /** Fuel % still unspent at reset if the rate holds (100 − `landingUsagePct`)
+   * — the "N% left by reset" readout, framed like `fuelLeft` above it, not in
+   * the opposite usage convention. */
+  fuelLeftAtLanding: number;
   hoursUntilReset: number;
   /** True when the RAW (unclamped) landing projection hits 100% before reset
    * actually arrives — "N% by reset" would misleadingly imply you coast to
@@ -56,16 +60,17 @@ export function fuelData(report: GaugeReport, landingPct: number, hoursToCap: nu
   const landingUsagePct = Math.max(0, Math.min(100, landingPct));
   const fuelAtLanding = 100 - landingUsagePct;
   const willCapBeforeReset = signalAvailable && landingPct >= 100 && Number.isFinite(hoursToCap);
-  // The warning light reads the PROJECTION, not today's level: it's the pump
-  // icon's job to warn you before the tank actually runs dry, so it lights up
-  // (and pulses) the moment the current rate lands you at/under empty by
-  // reset - including the extreme, landingUsagePct ≥ 100, where fuelAtLanding
-  // clamps to exactly 0 (capped out before reset).
-  const dry = signalAvailable && fuelAtLanding <= DRY_THRESHOLD;
+  // The pump warns — and the drain band reddens — ONLY on OVERSHOOT: when the
+  // rate would blow past the cap BEFORE reset (target fuel < 0, i.e.
+  // willCapBeforeReset). Draining down to exactly empty AT reset is maxxing,
+  // the goal you aim for, not a danger — so any landing at 0-or-above fuel
+  // reads neutral, never red.
+  const dry = willCapBeforeReset;
   const color = signalAvailable ? fuelColor(fuelLeft) : "var(--muted-foreground)";
-  // The "about to drain" band is always red, distinct from the tank's own muted
-  // default - a warning tone for fuel that's, in effect, already spoken for.
-  const drainColor = "var(--destructive)";
+  // The "about to drain by reset" band is neutral white by default (dimmed by
+  // opacity in fuelTickColors) — that fuel is on-plan spend, not a warning —
+  // and only turns red when you'd overshoot the cap before reset.
+  const drainColor = willCapBeforeReset ? "var(--destructive)" : "var(--foreground)";
   const showProjection = signalAvailable && fuelAtLanding < fuelLeft;
   // Mirrors RadialGauge's buildTicks(): tick i is active when i/(count-1) ≤
   // fraction, so the last active index is floor(fraction·(count-1)).
@@ -89,6 +94,7 @@ export function fuelData(report: GaugeReport, landingPct: number, hoursToCap: nu
     lastActiveTick,
     projectedActiveTick,
     landingUsagePct,
+    fuelLeftAtLanding: fuelAtLanding,
     hoursUntilReset,
     willCapBeforeReset,
     hoursToCap,
