@@ -113,7 +113,7 @@ export function fuelTickColors(d: FuelData) {
     tickClassName: (tick: Tick) =>
       cn(
         tick.index === d.lastActiveTick && "animate-tick-blink-dim",
-        tick.index > d.projectedActiveTick && tick.index < d.lastActiveTick && "opacity-60",
+        tick.index > d.projectedActiveTick && tick.index < d.lastActiveTick && "opacity-45",
       ),
   };
 }
