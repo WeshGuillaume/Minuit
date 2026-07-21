@@ -43,23 +43,40 @@ function FuelPercent({
 /** Where the current rate lands usage by reset, with the reset ETA folded into
  * one line ("62% by reset (1j16h)") instead of a separate "Reset …" caption -
  * shorter, and doesn't repeat "reset" twice. Falls back to the plain ETA when
- * there's no signal to project a landing from (never a dash). */
+ * there's no signal to project a landing from (never a dash).
+ *
+ * When the raw (unclamped) landing blows past 100% before reset actually
+ * arrives, "N% by reset (ETA)" would lie - reading as "you coast to N% right
+ * at reset" when really you run dry well before it. Swap the headline number
+ * for the real event ("0% by {time to empty}") and demote reset to a nudged
+ * aside, so the two times aren't confused for one. */
 function LandingCaption({
   landingUsagePct,
   hoursUntilReset,
+  willCapBeforeReset,
+  hoursToCap,
   signalAvailable,
 }: {
   landingUsagePct: number;
   hoursUntilReset: number;
+  willCapBeforeReset: boolean;
+  hoursToCap: number;
   signalAvailable: boolean;
 }) {
-  const eta = formatEta(hoursUntilReset);
+  const resetEta = formatEta(hoursUntilReset);
   if (!signalAvailable) {
-    return <span className="text-[10px] text-muted-foreground/70">Reset {eta}</span>;
+    return <span className="text-[10px] text-muted-foreground/70">Reset {resetEta}</span>;
+  }
+  if (willCapBeforeReset) {
+    return (
+      <span className="whitespace-nowrap text-[10px] text-muted-foreground/70">
+        <NumberFlow value={0} suffix={`% by ${formatEta(hoursToCap)} (reset ${resetEta})`} />
+      </span>
+    );
   }
   return (
     <span className="whitespace-nowrap text-[10px] text-muted-foreground/70">
-      <NumberFlow value={Math.round(landingUsagePct)} suffix={`% by reset (${eta})`} />
+      <NumberFlow value={Math.round(landingUsagePct)} suffix={`% by reset (${resetEta})`} />
     </span>
   );
 }
@@ -75,6 +92,8 @@ function FuelColumn({ data }: { data: FuelData }) {
         <LandingCaption
           landingUsagePct={data.landingUsagePct}
           hoursUntilReset={data.hoursUntilReset}
+          willCapBeforeReset={data.willCapBeforeReset}
+          hoursToCap={data.hoursToCap}
           signalAvailable={data.signalAvailable}
         />
       </div>
@@ -95,6 +114,8 @@ function FuelRow({ data }: { data: FuelData }) {
       <LandingCaption
         landingUsagePct={data.landingUsagePct}
         hoursUntilReset={data.hoursUntilReset}
+        willCapBeforeReset={data.willCapBeforeReset}
+        hoursToCap={data.hoursToCap}
         signalAvailable={data.signalAvailable}
       />
     </div>
@@ -107,7 +128,8 @@ export function FuelGauge({ report }: { report: GaugeReport }) {
   // disagrees with the needle it sits under.
   const { mode } = useGaugeMode();
   const landingPct = mode.id === "smooth" ? report.smoothLandingPct : report.landingPct;
-  const data = fuelData(report, landingPct);
+  const hoursToCap = mode.id === "smooth" ? report.smoothHoursToCap : report.hoursToCap;
+  const data = fuelData(report, landingPct, hoursToCap);
   return (
     <div className="flex w-full flex-col items-center gap-0.5 landscape:items-start">
       <FuelColumn data={data} />

@@ -208,6 +208,7 @@ export interface GaugeReport {
   landingPct: number; // livePct + live (readout) rate × ACTIVE hours left (same horizon as pace)
   smoothLandingPct: number; // same projection, but off the smooth rate — pairs with smoothPace
   hoursToCap: number; // hours to the cap at the live (readout) rate; Infinity when idle
+  smoothHoursToCap: number; // same, but off the smooth rate — pairs with smoothLandingPct
   hoursUntilReset: number; // wall-clock hours until this window resets
   resetsAt: number; // ms epoch
   // ── The profitability flex (Axis 1, demoted to a badge) ───────────────────

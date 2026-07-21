@@ -119,6 +119,7 @@ export const buildGauge = (input: GaugeInput): GaugeReport => {
     landingPct: livePct + readoutPct * activeHoursLeft,
     smoothLandingPct: livePct + smoothPct * activeHoursLeft,
     hoursToCap: hoursLeft(livePct, readoutPct),
+    smoothHoursToCap: hoursLeft(livePct, smoothPct),
     hoursUntilReset,
     resetsAt,
     ratio: profitabilityRatio(apiValue, subCost),

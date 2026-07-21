@@ -131,6 +131,11 @@ describe("buildGauge (speedometer orchestration)", () => {
     expect(worked.smoothLandingPct).toBeCloseTo(39 + worked.smoothRatePct * activeHoursLeft, 2);
   });
 
+  it("also projects hours-to-cap off the SMOOTH rate, pairing smoothLandingPct", () => {
+    expect(r.smoothHoursToCap).toBeCloseTo(r.hoursToCap, 6); // windows match in the fixture
+    expect(r.smoothHoursToCap).toBeCloseTo((100 - 39) / (75 / (2709.47 / 39)), 4);
+  });
+
   it("projects the landing over ACTIVE hours, the same horizon pace normalizes by", () => {
     // With an 8h workday the weekly headroom spreads over 8/24 of the wall
     // clock. The landing MUST compress the same way, or the dial reads

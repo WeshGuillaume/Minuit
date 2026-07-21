@@ -183,6 +183,7 @@ const toReport = (s: DemoScenario, tool: ToolId, window: WindowKey): GaugeReport
     landingPct: rateAnchor + smoothRatePct * hoursUntilReset,
     smoothLandingPct: rateAnchor + smoothRatePct * hoursUntilReset,
     hoursToCap: smoothRatePct > 0 ? (100 - rateAnchor) / smoothRatePct : Infinity,
+    smoothHoursToCap: smoothRatePct > 0 ? (100 - rateAnchor) / smoothRatePct : Infinity,
     hoursUntilReset,
     resetsAt: now + hoursUntilReset * H,
     ratio: profitabilityRatio(apiValue, subCost),

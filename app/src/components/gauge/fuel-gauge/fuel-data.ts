@@ -37,17 +37,25 @@ export interface FuelData {
    * "N% by reset" readout. Mirrors `fuelAtLanding` (its fuel-space complement). */
   landingUsagePct: number;
   hoursUntilReset: number;
+  /** True when the RAW (unclamped) landing projection hits 100% before reset
+   * actually arrives — "N% by reset" would misleadingly imply you coast to
+   * exactly N% right at reset, when really you run dry sooner. */
+  willCapBeforeReset: boolean;
+  /** Hours until the tank actually hits 0 at this rate; only meaningful when
+   * `willCapBeforeReset` (Infinity/NaN otherwise, e.g. genuinely idle). */
+  hoursToCap: number;
 }
 
-/** Resolve a report into the shape-independent fuel figures. `landingPct` is
- * caller-picked (report.landingPct or .smoothLandingPct) so the projection
- * always matches whichever pace mode (live/smooth) is on screen. */
-export function fuelData(report: GaugeReport, landingPct: number): FuelData {
+/** Resolve a report into the shape-independent fuel figures. `landingPct` and
+ * `hoursToCap` are caller-picked (the live or smooth pair) so the projection
+ * always matches whichever pace mode is on screen. */
+export function fuelData(report: GaugeReport, landingPct: number, hoursToCap: number): FuelData {
   const { currentPct, signalAvailable, hoursUntilReset } = report;
   const usage = Math.max(0, Math.min(100, currentPct));
   const fuelLeft = 100 - usage;
   const landingUsagePct = Math.max(0, Math.min(100, landingPct));
   const fuelAtLanding = 100 - landingUsagePct;
+  const willCapBeforeReset = signalAvailable && landingPct >= 100 && Number.isFinite(hoursToCap);
   // The warning light reads the PROJECTION, not today's level: it's the pump
   // icon's job to warn you before the tank actually runs dry, so it lights up
   // (and pulses) the moment the current rate lands you at/under empty by
@@ -82,6 +90,8 @@ export function fuelData(report: GaugeReport, landingPct: number): FuelData {
     projectedActiveTick,
     landingUsagePct,
     hoursUntilReset,
+    willCapBeforeReset,
+    hoursToCap,
   };
 }
 
