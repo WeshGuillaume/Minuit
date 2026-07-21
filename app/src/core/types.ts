@@ -206,6 +206,7 @@ export interface GaugeReport {
   // Where the needle's speed lands you, and when it would hit the cap.
   currentPct: number; // raw usage: the reality bar under the speedometer
   landingPct: number; // livePct + live (readout) rate × ACTIVE hours left (same horizon as pace)
+  smoothLandingPct: number; // same projection, but off the smooth rate — pairs with smoothPace
   hoursToCap: number; // hours to the cap at the live (readout) rate; Infinity when idle
   hoursUntilReset: number; // wall-clock hours until this window resets
   resetsAt: number; // ms epoch

@@ -120,6 +120,17 @@ describe("buildGauge (speedometer orchestration)", () => {
     expect(r.signalAvailable).toBe(true);
   });
 
+  it("also projects a landing off the SMOOTH rate, for the smooth-mode readout", () => {
+    // Fixture keeps readoutWindowHours === smoothWindowHours, so both landings
+    // agree here; a diverging pair is covered by the live/smooth rate split above.
+    expect(r.smoothLandingPct).toBeCloseTo(r.landingPct, 6);
+    // Shrinking active hours left (8h workday) must compress BOTH landings the
+    // same way — this one just rides smoothRatePct instead of the live rate.
+    const worked = buildGauge({ ...input, workHoursPerDay: 8 });
+    const activeHoursLeft = 40 * (8 / 24);
+    expect(worked.smoothLandingPct).toBeCloseTo(39 + worked.smoothRatePct * activeHoursLeft, 2);
+  });
+
   it("projects the landing over ACTIVE hours, the same horizon pace normalizes by", () => {
     // With an 8h workday the weekly headroom spreads over 8/24 of the wall
     // clock. The landing MUST compress the same way, or the dial reads

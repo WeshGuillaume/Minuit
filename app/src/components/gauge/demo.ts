@@ -181,6 +181,7 @@ const toReport = (s: DemoScenario, tool: ToolId, window: WindowKey): GaugeReport
     sustainableRatePct,
     currentPct: s.currentPct,
     landingPct: rateAnchor + smoothRatePct * hoursUntilReset,
+    smoothLandingPct: rateAnchor + smoothRatePct * hoursUntilReset,
     hoursToCap: smoothRatePct > 0 ? (100 - rateAnchor) / smoothRatePct : Infinity,
     hoursUntilReset,
     resetsAt: now + hoursUntilReset * H,

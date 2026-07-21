@@ -14,6 +14,7 @@
 import type { GaugeReport } from "@core/types";
 import { NumberFlow } from "@/components/ui/number-flow";
 import { formatEta } from "../format";
+import { useGaugeMode } from "../modes/context";
 import { FuelArc } from "./fuel-arc";
 import { FuelBar } from "./fuel-bar";
 import { type FuelData, fuelData } from "./fuel-data";
@@ -39,9 +40,27 @@ function FuelPercent({
   );
 }
 
-function ResetCaption({ hoursUntilReset }: { hoursUntilReset: number }) {
+/** Where the current rate lands usage by reset, with the reset ETA folded into
+ * one line ("62% by reset (1j16h)") instead of a separate "Reset …" caption -
+ * shorter, and doesn't repeat "reset" twice. Falls back to the plain ETA when
+ * there's no signal to project a landing from (never a dash). */
+function LandingCaption({
+  landingUsagePct,
+  hoursUntilReset,
+  signalAvailable,
+}: {
+  landingUsagePct: number;
+  hoursUntilReset: number;
+  signalAvailable: boolean;
+}) {
+  const eta = formatEta(hoursUntilReset);
+  if (!signalAvailable) {
+    return <span className="text-[10px] text-muted-foreground/70">Reset {eta}</span>;
+  }
   return (
-    <span className="text-[10px] text-muted-foreground/70">Reset {formatEta(hoursUntilReset)}</span>
+    <span className="whitespace-nowrap text-[10px] text-muted-foreground/70">
+      <NumberFlow value={Math.round(landingUsagePct)} suffix={`% by reset (${eta})`} />
+    </span>
   );
 }
 
@@ -53,7 +72,11 @@ function FuelColumn({ data }: { data: FuelData }) {
       <FuelArc data={data} />
       <div className="flex flex-col items-center gap-0.5 [@container_stack_(max-height:54px)]:hidden">
         <FuelPercent fuelLeft={data.fuelLeft} signalAvailable={data.signalAvailable} />
-        <ResetCaption hoursUntilReset={data.hoursUntilReset} />
+        <LandingCaption
+          landingUsagePct={data.landingUsagePct}
+          hoursUntilReset={data.hoursUntilReset}
+          signalAvailable={data.signalAvailable}
+        />
       </div>
     </div>
   );
@@ -69,13 +92,22 @@ function FuelRow({ data }: { data: FuelData }) {
         <FuelBar data={data} />
         <FuelPercent fuelLeft={data.fuelLeft} signalAvailable={data.signalAvailable} />
       </div>
-      <ResetCaption hoursUntilReset={data.hoursUntilReset} />
+      <LandingCaption
+        landingUsagePct={data.landingUsagePct}
+        hoursUntilReset={data.hoursUntilReset}
+        signalAvailable={data.signalAvailable}
+      />
     </div>
   );
 }
 
 export function FuelGauge({ report }: { report: GaugeReport }) {
-  const data = fuelData(report);
+  // Pairs the fuel projection with whichever pace smoothing is on screen (the
+  // dial's live/smooth toggle) — else the fuel gauge could show a landing that
+  // disagrees with the needle it sits under.
+  const { mode } = useGaugeMode();
+  const landingPct = mode.id === "smooth" ? report.smoothLandingPct : report.landingPct;
+  const data = fuelData(report, landingPct);
   return (
     <div className="flex w-full flex-col items-center gap-0.5 landscape:items-start">
       <FuelColumn data={data} />

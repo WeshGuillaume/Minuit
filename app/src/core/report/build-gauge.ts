@@ -117,6 +117,7 @@ export const buildGauge = (input: GaugeInput): GaugeReport => {
     // the same horizon or the two disagree — the dial reads "underfarming"
     // while the bar predicts capping (you don't burn through nights/weekends).
     landingPct: livePct + readoutPct * activeHoursLeft,
+    smoothLandingPct: livePct + smoothPct * activeHoursLeft,
     hoursToCap: hoursLeft(livePct, readoutPct),
     hoursUntilReset,
     resetsAt,

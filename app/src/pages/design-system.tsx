@@ -39,6 +39,7 @@ const mock = (over: Partial<GaugeReport>): GaugeReport => {
     sustainableRatePct: 1.5,
     currentPct: 40,
     landingPct: 70,
+    smoothLandingPct: 70,
     hoursToCap: 30,
     hoursUntilReset: 40,
     resetsAt: NOW + 40 * 3_600_000,

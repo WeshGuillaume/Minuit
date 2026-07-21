@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
 // resolve the same active/projected indices.
 export const FUEL_TICKS = 24;
 
-// Fuel left (%) at/below which the tank is "approaching dry": the warning light
-// and the ticks turn red. 15% left = 85% used, the pace zones' redlining break.
+// Fuel left (%) at/below which the tank is "approaching dry": the ticks turn
+// red. 15% left = 85% used, the pace zones' redlining break.
 export const DRY_THRESHOLD = 15;
 
 // A plain muted tank colour otherwise (the fuel gauge is the reality anchor, not
@@ -33,16 +33,27 @@ export interface FuelData {
   /** Index the frontier retreats to by reset at the current rate; equals
    * `lastActiveTick` when there's no live projection. */
   projectedActiveTick: number;
+  /** Usage % this same rate lands you at by reset, clamped to [0, 100] — the
+   * "N% by reset" readout. Mirrors `fuelAtLanding` (its fuel-space complement). */
+  landingUsagePct: number;
   hoursUntilReset: number;
 }
 
-/** Resolve a report into the shape-independent fuel figures. */
-export function fuelData(report: GaugeReport): FuelData {
-  const { currentPct, landingPct, signalAvailable, hoursUntilReset } = report;
+/** Resolve a report into the shape-independent fuel figures. `landingPct` is
+ * caller-picked (report.landingPct or .smoothLandingPct) so the projection
+ * always matches whichever pace mode (live/smooth) is on screen. */
+export function fuelData(report: GaugeReport, landingPct: number): FuelData {
+  const { currentPct, signalAvailable, hoursUntilReset } = report;
   const usage = Math.max(0, Math.min(100, currentPct));
   const fuelLeft = 100 - usage;
-  const fuelAtLanding = 100 - Math.max(0, Math.min(100, landingPct));
-  const dry = signalAvailable && fuelLeft <= DRY_THRESHOLD;
+  const landingUsagePct = Math.max(0, Math.min(100, landingPct));
+  const fuelAtLanding = 100 - landingUsagePct;
+  // The warning light reads the PROJECTION, not today's level: it's the pump
+  // icon's job to warn you before the tank actually runs dry, so it lights up
+  // (and pulses) the moment the current rate lands you at/under empty by
+  // reset - including the extreme, landingUsagePct ≥ 100, where fuelAtLanding
+  // clamps to exactly 0 (capped out before reset).
+  const dry = signalAvailable && fuelAtLanding <= DRY_THRESHOLD;
   const color = signalAvailable ? fuelColor(fuelLeft) : "var(--muted-foreground)";
   // The "about to drain" band is always red, distinct from the tank's own muted
   // default - a warning tone for fuel that's, in effect, already spoken for.
@@ -51,8 +62,15 @@ export function fuelData(report: GaugeReport): FuelData {
   // Mirrors RadialGauge's buildTicks(): tick i is active when i/(count-1) ≤
   // fraction, so the last active index is floor(fraction·(count-1)).
   const lastActiveTick = signalAvailable ? Math.floor((fuelLeft / 100) * (FUEL_TICKS - 1)) : -1;
+  // fuelAtLanding === 0 means a TOTAL drain (landingUsagePct clamped from
+  // ≥100), not just a sliver left — floor() alone would still land tick 0 in
+  // the "safe" band (it's the one tick lit for any fuelAtLanding > 0 too), so
+  // pin it to -1 (mirrors the no-signal convention) to pull tick 0 into the
+  // drain band as well: nothing survives to reset, so no tick reads as safe.
   const projectedActiveTick = showProjection
-    ? Math.floor((fuelAtLanding / 100) * (FUEL_TICKS - 1))
+    ? fuelAtLanding <= 0
+      ? -1
+      : Math.floor((fuelAtLanding / 100) * (FUEL_TICKS - 1))
     : lastActiveTick;
   return {
     signalAvailable,
@@ -62,6 +80,7 @@ export function fuelData(report: GaugeReport): FuelData {
     drainColor,
     lastActiveTick,
     projectedActiveTick,
+    landingUsagePct,
     hoursUntilReset,
   };
 }
